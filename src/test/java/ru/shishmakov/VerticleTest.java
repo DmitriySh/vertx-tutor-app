@@ -20,7 +20,7 @@ import static java.util.Objects.nonNull;
  * Unit test for simple App.
  */
 @RunWith(VertxUnitRunner.class)
-public class FirstVerticleTest {
+public class VerticleTest {
 
     private int port;
     private Vertx vertx;
@@ -30,7 +30,7 @@ public class FirstVerticleTest {
         port = builLocalPort();
         DeploymentOptions options = new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
         vertx = Vertx.vertx();
-        vertx.deployVerticle(FirstVerticle.class.getName(), options, context.asyncAssertSuccess());
+        vertx.deployVerticle(WebVerticle.class.getName(), options, context.asyncAssertSuccess());
     }
 
     @After
