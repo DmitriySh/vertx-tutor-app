@@ -26,7 +26,7 @@ public class WebVerticle extends AbstractVerticle {
 
     @Override
     public void start(Future<Void> startFuture) {
-        products = buildProducts();
+        products = buildDefaultProducts();
         Router router = Router.router(vertx);
         router.route("/").handler(this::welcomeRootHandler);
         router.route("/assets/*").handler(StaticHandler.create("assets"));
@@ -44,7 +44,7 @@ public class WebVerticle extends AbstractVerticle {
                 });
     }
 
-    private Map<Integer, Whisky> buildProducts() {
+    private Map<Integer, Whisky> buildDefaultProducts() {
         Whisky bowmore = new Whisky("Bowmore 15 Years Laimrig", "Scotland, Islay");
         Whisky talisker = new Whisky("Talisker 57° North", "Scotland, Island");
         Map<Integer, Whisky> products = new LinkedHashMap<>();
