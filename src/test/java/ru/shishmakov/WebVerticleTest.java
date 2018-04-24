@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 
 /**
- * Unit test for vert.x web app
+ * Unit tests for vert.x web app
  */
 @RunWith(VertxUnitRunner.class)
 public class WebVerticleTest {
@@ -39,7 +39,7 @@ public class WebVerticleTest {
     }
 
     @Test
-    public void checkThatTheAssetsIndexPageIsServed(TestContext context) {
+    public void checkGetAssetsIndexShouldBeAvailable(TestContext context) {
         Async async = context.async();
         vertx.createHttpClient().getNow(port, "localhost", "/assets/index.html", rh -> {
             context.assertEquals(200, rh.statusCode(), "status code is not equal");
@@ -52,7 +52,7 @@ public class WebVerticleTest {
     }
 
     @Test
-    public void checkPostWhiskyShouldAddOne(TestContext context) {
+    public void checkPostShouldAddOneWhisky(TestContext context) {
         Async async = context.async();
         String data = Json.encodePrettily(new Whisky("Jameson", "Ireland"));
         vertx.createHttpClient().post(port, "localhost", "/api/whiskies/")
