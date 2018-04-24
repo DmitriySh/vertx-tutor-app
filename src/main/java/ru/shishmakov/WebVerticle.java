@@ -127,7 +127,7 @@ public class WebVerticle extends AbstractVerticle {
 
     private void welcomeRootHandler(RoutingContext context) {
         context.response()
-                .putHeader("content-type", "text/html")
+                .putHeader("content-type", "text/html; charset=utf-8")
                 .end("<h1>Hello from my first Vert.x 3 application!</h1>");
     }
 }
