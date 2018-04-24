@@ -17,25 +17,25 @@ import java.net.ServerSocket;
 import static java.util.Objects.nonNull;
 
 /**
- * Unit test for simple App.
+ * Unit test for vert.x core app
  */
 @RunWith(VertxUnitRunner.class)
-public class VerticleTest {
+public class SimpleVerticleTest {
 
     private int port;
     private Vertx vertx;
 
     @Before
     public void setUp(TestContext context) throws IOException {
-        port = builLocalPort();
+        port = buildLocalPort();
         DeploymentOptions options = new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
         vertx = Vertx.vertx();
-        vertx.deployVerticle(WebVerticle.class.getName(), options, context.asyncAssertSuccess());
+        vertx.deployVerticle(SimpleVerticle.class.getName(), options, context.asyncAssertSuccess());
     }
 
     @After
-    public void tearDown() {
-        vertx.close();
+    public void tearDown(TestContext context) {
+        vertx.close(context.asyncAssertSuccess());
     }
 
     @Test
@@ -50,7 +50,7 @@ public class VerticleTest {
                 }));
     }
 
-    private int builLocalPort() throws IOException {
+    private int buildLocalPort() throws IOException {
         try (ServerSocket socket = new ServerSocket(0)) {
             return socket.getLocalPort();
         }

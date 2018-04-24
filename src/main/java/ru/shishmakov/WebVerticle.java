@@ -27,21 +27,26 @@ public class WebVerticle extends AbstractVerticle {
     @Override
     public void start(Future<Void> startFuture) {
         products = buildDefaultProducts();
-        Router router = Router.router(vertx);
-        router.route("/").handler(this::welcomeRootHandler);
-        router.route("/assets/*").handler(StaticHandler.create("assets"));
-        router.route("/api/whiskies*").handler(BodyHandler.create()); //Resource not found
-        router.get("/api/whiskies").handler(this::getAllHandler);
-        router.get("/api/whiskies/:id").handler(this::getOneHandler);
-        router.post("/api/whiskies").handler(this::addOneHandler);
-        router.put("/api/whiskies/:id").handler(this::updateOneHandler);
-        router.delete("/api/whiskies/:id").handler(this::deleteOneHandler);
+        Router router = buildRouter();
         vertx.createHttpServer()
                 .requestHandler(router::accept)
                 .listen(config().getInteger("http.port", DEFAULT_PORT), result -> {
                     if (result.succeeded()) startFuture.complete();
                     else startFuture.fail(result.cause());
                 });
+    }
+
+    private Router buildRouter() {
+        Router router = Router.router(vertx);
+        router.route("/").handler(this::welcomeRootHandler);
+        router.route("/assets/*").handler(StaticHandler.create("assets"));
+        router.route("/api/whiskies*").handler(BodyHandler.create()); //resource not found
+        router.get("/api/whiskies").handler(this::getAllHandler);
+        router.get("/api/whiskies/:id").handler(this::getOneHandler);
+        router.post("/api/whiskies").handler(this::addOneHandler);
+        router.put("/api/whiskies/:id").handler(this::updateOneHandler);
+        router.delete("/api/whiskies/:id").handler(this::deleteOneHandler);
+        return router;
     }
 
     private Map<Integer, Whisky> buildDefaultProducts() {
