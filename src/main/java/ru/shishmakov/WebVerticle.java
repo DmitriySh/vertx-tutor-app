@@ -61,7 +61,7 @@ public class WebVerticle extends AbstractVerticle {
     }
 
     /**
-     * curl -H "Content-Type: application/json" -X PUT -d '{"name":"Jameson","origin":"Ireland"}' http://localhost:8080/api/whiskies/1
+     * curl -H "Content-Type: application/json" -X PUT -d '{"name":"Jameson","origin":"Ireland"}' localhost:8080/api/whiskies/1
      */
     private void updateOneHandler(RoutingContext context) {
         Integer id = Optional.of(context.request()).map(r -> r.getParam("id")).map(Integer::valueOf).orElse(null);
@@ -81,7 +81,7 @@ public class WebVerticle extends AbstractVerticle {
     }
 
     /**
-     * curl -X GET http://localhost:8080/api/whiskies/1
+     * curl -X GET localhost:8080/api/whiskies/1
      */
     private void getOneHandler(RoutingContext context) {
         Integer id = Optional.of(context.request()).map(r -> r.getParam("id")).map(Integer::valueOf).orElse(null);
@@ -97,7 +97,7 @@ public class WebVerticle extends AbstractVerticle {
     }
 
     /**
-     * curl -X DELETE http://localhost:8080/api/whiskies/2
+     * curl -X DELETE localhost:8080/api/whiskies/2
      */
     private void deleteOneHandler(RoutingContext context) {
         String id = context.request().getParam("id");
@@ -107,7 +107,7 @@ public class WebVerticle extends AbstractVerticle {
     }
 
     /**
-     * curl -H "Content-Type: application/json" -X POST -d '{"id":2,"name":"WhiskyName","origin":"WhiskyOrigin"}' http://localhost:8080/api/whiskies
+     * curl -H "Content-Type: application/json" -X POST -d '{"id":2,"name":"WhiskyName","origin":"WhiskyOrigin"}' localhost:8080/api/whiskies
      */
     private void addOneHandler(RoutingContext context) {
         Whisky whisky = Json.decodeValue(context.getBodyAsString(), Whisky.class);
@@ -119,7 +119,7 @@ public class WebVerticle extends AbstractVerticle {
     }
 
     /**
-     * curl -X GET http://localhost:8080/api/whiskies
+     * curl -X GET localhost:8080/api/whiskies
      */
     private void getAllHandler(RoutingContext context) {
         context.response()
