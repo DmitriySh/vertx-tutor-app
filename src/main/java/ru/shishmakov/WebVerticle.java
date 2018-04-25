@@ -21,16 +21,18 @@ import static java.util.Objects.isNull;
  */
 public class WebVerticle extends AbstractVerticle {
 
-    private static final int DEFAULT_PORT = 8080;
-    private Map<Integer, Whisky> products;
+    private final Map<Integer, Whisky> products;
+
+    public WebVerticle() {
+        this.products = buildDefaultProducts();
+    }
 
     @Override
     public void start(Future<Void> startFuture) {
-        products = buildDefaultProducts();
         Router router = buildRouter();
         vertx.createHttpServer()
                 .requestHandler(router::accept)
-                .listen(config().getInteger("http.port", DEFAULT_PORT), result -> {
+                .listen(config().getInteger("http.port", 8080), result -> {
                     if (result.succeeded()) startFuture.complete();
                     else startFuture.fail(result.cause());
                 });
