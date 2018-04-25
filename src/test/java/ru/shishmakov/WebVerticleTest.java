@@ -28,7 +28,10 @@ public class WebVerticleTest {
     @Before
     public void setUp(TestContext context) throws IOException {
         port = buildLocalPort();
-        DeploymentOptions options = new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
+        DeploymentOptions options = new DeploymentOptions().setConfig(new JsonObject()
+                .put("http.port", port)
+                .put("url", "jdbc:hsqldb:mem:test?shutdown=true")
+                .put("driver_class", "org.hsqldb.jdbcDriver"));
         vertx = Vertx.vertx();
         vertx.deployVerticle(WebVerticle.class.getName(), options, context.asyncAssertSuccess());
     }
