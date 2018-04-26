@@ -28,7 +28,7 @@ public class RestIT {
     @Test
     public void checkGetShouldRetrieveOneWhisky() {
         // get list of whiskies and get id one of them
-        int whiskyId = RestAssured.get("/api/whiskies").then()
+        int whiskyId = RestAssured.get("/api/whiskies/").then()
                 .assertThat()
                 .statusCode(200)
                 .extract()
@@ -54,7 +54,7 @@ public class RestIT {
                 .as(Whisky.class);
         assertThat(whisky.getName()).isEqualToIgnoringCase("Jameson");
         assertThat(whisky.getOrigin()).isEqualToIgnoringCase("Ireland");
-        assertThat(whisky.getId()).isGreaterThan(0);
+        assertThat(whisky.getId()).isNotNegative();
         // get posted whisky
         RestAssured.get("/api/whiskies/" + whisky.getId()).then()
                 .assertThat()
