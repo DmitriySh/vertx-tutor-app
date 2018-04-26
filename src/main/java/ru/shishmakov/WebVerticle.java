@@ -116,7 +116,7 @@ public class WebVerticle extends AbstractVerticle {
         router.route("/api/whiskies*").handler(BodyHandler.create()); //resource not found
         router.get("/api/whiskies").handler(this::getAllHandler);
         router.get("/api/whiskies/:id").handler(this::getOneHandler);
-        router.post("/api/whiskies/").handler(this::addOneHandler);
+        router.post("/api/whiskies").handler(this::addOneHandler);
         router.put("/api/whiskies/:id").handler(this::updateOneHandler);
         router.delete("/api/whiskies/:id").handler(this::deleteOneHandler);
         vertx.createHttpServer()
@@ -209,7 +209,7 @@ public class WebVerticle extends AbstractVerticle {
                 else context.response()
                         .setStatusCode(201)
                         .putHeader("content-type", "application/json; charset=utf-8")
-                        .end(Json.encodePrettily(whisky));
+                        .end(Json.encodePrettily(insertResult.result()));
                 sqlCon.close();
             });
         });
