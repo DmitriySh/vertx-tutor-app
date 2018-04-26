@@ -57,10 +57,10 @@ public class WebVerticleTest {
     @Test
     public void checkPostShouldAddOneWhisky(TestContext context) {
         Async async = context.async();
-        String data = Json.encodePrettily(new Whisky("Jameson", "Ireland"));
+        String src = Json.encodePrettily(new Whisky("Jameson", "Ireland"));
         vertx.createHttpClient().post(port, "localhost", "/api/whiskies/")
                 .putHeader("content-type", "application/json")
-                .putHeader("content-length", String.valueOf(data.length()))
+                .putHeader("content-length", String.valueOf(src.length()))
                 .handler(h -> {
                     context.assertEquals(201, h.statusCode(), "status code is not equal");
                     context.assertEquals("application/json; charset=utf-8", h.headers().get("content-type"), "content-type is not equal");
@@ -72,7 +72,7 @@ public class WebVerticleTest {
                         async.complete();
                     });
                 })
-                .write(data)
+                .write(src)
                 .end();
     }
 
