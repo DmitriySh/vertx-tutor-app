@@ -101,6 +101,7 @@
                                     <manifestEntries>
                                         <Main-Class>io.vertx.core.Launcher</Main-Class>
                                         <Main-Verticle>ru.shishmakov.WebVerticle</Main-Verticle>
+                                        <!--<Main-Verticle>ru.shishmakov.SimpleVerticle</Main-Verticle>-->
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
