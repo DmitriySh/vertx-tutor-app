@@ -39,7 +39,10 @@ public class WebVerticle extends AbstractVerticle {
 
     @Override
     public void start(Future<Void> verticleFuture) {
-        this.jdbc = JDBCClient.createShared(vertx, config(), "ds-whisky");
+        this.jdbc = JDBCClient.createShared(vertx, config()
+                        .put("url", "jdbc:hsqldb:file:db/whiskies")
+                        .put("driver_class", "org.hsqldb.jdbcDriver"),
+                "ds-whisky");
         startBackend(con -> initDefaultData(
                 con,
                 initialized -> startWeb(httpServer -> completeStartup(httpServer, verticleFuture)),
