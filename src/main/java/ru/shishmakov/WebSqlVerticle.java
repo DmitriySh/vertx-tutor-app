@@ -26,7 +26,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Use <b>vertx-web</b> part of Vert.x
  */
-public class WebVerticle extends AbstractVerticle {
+public class WebSqlVerticle extends AbstractVerticle {
 
     public static final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS whisky (id INTEGER IDENTITY, name varchar(100), origin varchar(100))";
     public static final String SELECT_ALL = "SELECT * FROM whisky";
@@ -279,7 +279,7 @@ public class WebVerticle extends AbstractVerticle {
             if (selectResult.result().getNumRows() == 0) {
                 next.handle(Future.failedFuture("not found whisky with id: " + id));
             } else if (selectResult.result().getNumRows() == 1) {
-                next.handle(Future.succeededFuture(new Whisky(selectResult.result().getRows().get(0))));
+                next.handle(Future.succeededFuture(Whisky.fromJson(selectResult.result().getRows().get(0))));
             } else {
                 next.handle(Future.failedFuture("several whiskies with id: " + id));
             }
@@ -296,7 +296,7 @@ public class WebVerticle extends AbstractVerticle {
             if (selectResult.result().getNumRows() == 0) {
                 next.handle(Future.failedFuture("whiskies not found"));
             } else {
-                next.handle(Future.succeededFuture(selectResult.result().getRows().stream().map(Whisky::new).collect(toList())));
+                next.handle(Future.succeededFuture(selectResult.result().getRows().stream().map(Whisky::fromJson).collect(toList())));
             }
         });
     }

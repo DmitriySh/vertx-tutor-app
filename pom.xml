@@ -42,6 +42,12 @@
             <version>${vertx.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>de.flapdoodle.embed</groupId>
+            <artifactId>de.flapdoodle.embed.mongo</artifactId>
+            <version>2.0.3</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>io.vertx</groupId>
@@ -62,6 +68,11 @@
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
             <version>2.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-mongo-client</artifactId>
+            <version>${vertx.version}</version>
         </dependency>
     </dependencies>
 
@@ -100,7 +111,7 @@
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
                                         <Main-Class>io.vertx.core.Launcher</Main-Class>
-                                        <Main-Verticle>ru.shishmakov.WebVerticle</Main-Verticle>
+                                        <Main-Verticle>ru.shishmakov.WebSqlVerticle</Main-Verticle>
                                         <!--<Main-Verticle>ru.shishmakov.SimpleVerticle</Main-Verticle>-->
                                     </manifestEntries>
                                 </transformer>
@@ -207,6 +218,43 @@
                 </executions>
             </plugin>
 
+            <plugin>
+                <groupId>com.github.joelittlejohn.embedmongo</groupId>
+                <artifactId>embedmongo-maven-plugin</artifactId>
+                <version>0.3.3</version>
+                <executions>
+                    <execution>
+                        <id>start</id>
+                        <goals>
+                            <goal>start</goal>
+                        </goals>
+                        <configuration>
+                            <!-- optional, default 27017 -->
+                            <port>37017</port>
+                            <!-- optional, default 2.2.1 -->
+                            <version>3.4.14</version>
+                            <!-- optional, default is a new dir in java.io.tmpdir -->
+                            <databaseDirectory>${project.build.directory}/mongotest</databaseDirectory>
+                            <!-- optional (file|console|none), default console -->
+                            <logging>file</logging>
+                            <!-- optional, can be used when logging=file, default is ./embedmongo.log -->
+                            <logFile>${project.build.directory}/mongod.log</logFile>
+                            <!-- optional, default is to listen on all interfaces -->
+                            <bindIp>127.0.0.1</bindIp>
+                            <!--optional, one of wiredTiger or mmapv1 (default is mmapv1) -->
+                            <storageEngine>wiredTiger</storageEngine>
+                            <!-- optional, skips this plugin entirely, use on the command line like -Dembedmongo.skip -->
+                            <skip>false</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>stop</id>
+                        <goals>
+                            <goal>stop</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

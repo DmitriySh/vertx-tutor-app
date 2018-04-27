@@ -2,20 +2,13 @@ package ru.shishmakov.blog;
 
 import io.vertx.core.json.JsonObject;
 
+import java.util.Objects;
+import java.util.Optional;
+
 public class Whisky {
     private final int id;
     private String name;
     private String origin;
-
-    public Whisky() {
-        this.id = -1;
-    }
-
-    public Whisky(String name, String origin) {
-        this();
-        this.name = name;
-        this.origin = origin;
-    }
 
     public Whisky(int id, String name, String origin) {
         this.id = id;
@@ -23,10 +16,12 @@ public class Whisky {
         this.origin = origin;
     }
 
-    public Whisky(JsonObject json) {
-        this.id = json.getInteger("ID");
-        this.name = json.getString("NAME");
-        this.origin = json.getString("ORIGIN");
+    public Whisky(String name, String origin) {
+        this(-1, name, origin);
+    }
+
+    public Whisky() {
+        this(-1, null, null);
     }
 
     public int getId() {
@@ -47,6 +42,27 @@ public class Whisky {
 
     public void setOrigin(String origin) {
         this.origin = origin;
+    }
+
+    public static Whisky fromJson(JsonObject json) {
+        return new Whisky(
+                Optional.of(json)
+                        .map(j -> j.getString("_id", json.getString("ID")))
+                        .map(Integer::valueOf)
+                        .orElse(-1),
+                Optional.of(json).map(j -> j.getString("name", json.getString("NAME"))).orElse(null),
+                Optional.of(json).map(j -> j.getString("origin", json.getString("ORIGIN"))).orElse(null));
+    }
+
+    public JsonObject toJson() {
+        return toJson(false);
+    }
+
+    public JsonObject toJson(boolean useMongo) {
+        JsonObject json = new JsonObject().put(useMongo ? "_id" : "ID", String.valueOf(id));
+        if (Objects.nonNull(name)) json.put("NAME", name);
+        if (Objects.nonNull(origin)) json.put("ORIGIN", origin);
+        return json;
     }
 
     @Override

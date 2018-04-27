@@ -33,7 +33,7 @@ public class WebVerticleTest {
                 .put("url", "jdbc:hsqldb:mem:test?shutdown=true")
                 .put("driver_class", "org.hsqldb.jdbcDriver"));
         vertx = Vertx.vertx();
-        vertx.deployVerticle(WebVerticle.class.getName(), options, context.asyncAssertSuccess());
+        vertx.deployVerticle(WebSqlVerticle.class.getName(), options, context.asyncAssertSuccess());
     }
 
     @After
