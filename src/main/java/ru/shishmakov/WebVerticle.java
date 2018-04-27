@@ -30,10 +30,10 @@ public class WebVerticle extends AbstractVerticle {
 
     public static final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS whisky (id INTEGER IDENTITY, name varchar(100), origin varchar(100))";
     public static final String SELECT_ALL = "SELECT * FROM whisky";
-    public static final String SELECT_ONE = "SELECT * FROM whisky WHERE id=?";
+    public static final String SELECT_BY_ID = "SELECT * FROM whisky WHERE id=?";
     public static final String INSERT_ONE = "INSERT INTO whisky (name, origin) VALUES (?, ?)";
-    public static final String UPDATE_ONE = "UPDATE whisky SET name=?, origin=? WHERE id=?";
-    public static final String DELETE_ONE = "DELETE FROM whisky WHERE id=?";
+    public static final String UPDATE_NAME_AND_ORIGIN_AND_ID = "UPDATE whisky SET name=?, origin=? WHERE id=?";
+    public static final String DELETE_BY_ID = "DELETE FROM whisky WHERE id=?";
 
     private JDBCClient jdbc;
 
@@ -190,7 +190,7 @@ public class WebVerticle extends AbstractVerticle {
         if (isNull(id)) context.response().setStatusCode(400).end();
         else jdbc.getConnection(conResult -> {
             SQLConnection sqlCon = conResult.result();
-            sqlCon.updateWithParams(DELETE_ONE, new JsonArray().add(id), deleteResult -> {
+            sqlCon.updateWithParams(DELETE_BY_ID, new JsonArray().add(id), deleteResult -> {
                 context.response().setStatusCode(204).end();
                 sqlCon.close();
             });
@@ -252,7 +252,8 @@ public class WebVerticle extends AbstractVerticle {
     }
 
     private void updateOne(Integer id, JsonObject src, SQLConnection sqlCon, Handler<AsyncResult<Whisky>> next) {
-        sqlCon.updateWithParams(UPDATE_ONE, new JsonArray().add(src.getString("name")).add(src.getString("origin")).add(id),
+        sqlCon.updateWithParams(UPDATE_NAME_AND_ORIGIN_AND_ID,
+                new JsonArray().add(src.getString("name")).add(src.getString("origin")).add(id),
                 updateResult -> {
                     if (updateResult.failed()) {
                         next.handle(Future.failedFuture(updateResult.cause()));
@@ -267,7 +268,7 @@ public class WebVerticle extends AbstractVerticle {
     }
 
     private void selectOne(Integer id, SQLConnection sqlCon, Handler<AsyncResult<Whisky>> next) {
-        sqlCon.queryWithParams(SELECT_ONE, new JsonArray().add(id), selectResult -> {
+        sqlCon.queryWithParams(SELECT_BY_ID, new JsonArray().add(id), selectResult -> {
             if (selectResult.failed()) {
                 next.handle(Future.failedFuture(selectResult.cause()));
                 return;
