@@ -6,10 +6,9 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.mongo.FindOptions;
 import io.vertx.ext.mongo.MongoClient;
-import io.vertx.ext.sql.SQLConnection;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -27,12 +26,6 @@ import static java.util.stream.Collectors.toList;
  */
 public class WebMongoVerticle extends AbstractVerticle {
 
-    public static final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS whisky (id INTEGER IDENTITY, name varchar(100), origin varchar(100))";
-    public static final String SELECT_ALL = "SELECT * FROM whisky";
-    public static final String SELECT_BY_ID = "SELECT * FROM whisky WHERE id=?";
-    public static final String INSERT_ONE = "INSERT INTO whisky (name, origin) VALUES (?, ?)";
-    public static final String UPDATE_NAME_AND_ORIGIN_AND_ID = "UPDATE whisky SET name=?, origin=? WHERE id=?";
-    public static final String DELETE_BY_ID = "DELETE FROM whisky WHERE id=?";
     public static final String COLLECTION = "whiskies";
 
     private MongoClient mongoClient;
@@ -123,16 +116,12 @@ public class WebMongoVerticle extends AbstractVerticle {
         Integer id = Optional.of(context.request()).map(r -> r.getParam("id")).map(Integer::valueOf).orElse(null);
         JsonObject src = context.getBodyAsJson();
         if (isNull(id) || isNull(src)) context.response().setStatusCode(400).end();
-        else jdbc.getConnection(conResult -> {
-            SQLConnection sqlCon = conResult.result();
-            updateOne(id, src, sqlCon, updateResult -> {
-                if (updateResult.failed()) context.response().setStatusCode(404).end();
-                else context.response()
-                        .setStatusCode(200)
-                        .putHeader("content-type", "application/json; charset=utf-8")
-                        .end(Json.encodePrettily(updateResult.result()));
-                sqlCon.close();
-            });
+        else update(id, src, updateResult -> {
+            if (updateResult.failed()) context.response().setStatusCode(404).end();
+            else context.response()
+                    .setStatusCode(200)
+                    .putHeader("content-type", "application/json; charset=utf-8")
+                    .end(Json.encodePrettily(updateResult.result()));
         });
     }
 
@@ -142,16 +131,12 @@ public class WebMongoVerticle extends AbstractVerticle {
     private void getOneHandler(RoutingContext context) {
         Integer id = Optional.of(context.request()).map(r -> r.getParam("id")).map(Integer::valueOf).orElse(null);
         if (isNull(id)) context.response().setStatusCode(400).end();
-        else jdbc.getConnection(conResult -> {
-            SQLConnection sqlCon = conResult.result();
-            selectOne(id, sqlCon, selectResult -> {
-                if (selectResult.failed()) context.response().setStatusCode(404).end();
-                else context.response()
-                        .setStatusCode(200)
-                        .putHeader("content-type", "application/json; charset=utf-8")
-                        .end(Json.encodePrettily(selectResult.result()));
-                sqlCon.close();
-            });
+        else selectOne(id, selectResult -> {
+            if (selectResult.failed()) context.response().setStatusCode(404).end();
+            else context.response()
+                    .setStatusCode(200)
+                    .putHeader("content-type", "application/json; charset=utf-8")
+                    .end(Json.encodePrettily(selectResult.result()));
         });
     }
 
@@ -161,12 +146,9 @@ public class WebMongoVerticle extends AbstractVerticle {
     private void deleteOneHandler(RoutingContext context) {
         Integer id = Optional.of(context.request()).map(r -> r.getParam("id")).map(Integer::valueOf).orElse(null);
         if (isNull(id)) context.response().setStatusCode(400).end();
-        else jdbc.getConnection(conResult -> {
-            SQLConnection sqlCon = conResult.result();
-            sqlCon.updateWithParams(DELETE_BY_ID, new JsonArray().add(id), deleteResult -> {
-                context.response().setStatusCode(204).end();
-                sqlCon.close();
-            });
+        else delete(id, deleteResult -> {
+            if (deleteResult.failed()) context.response().setStatusCode(400).end();
+            else context.response().setStatusCode(204).end();
         });
     }
 
@@ -175,16 +157,12 @@ public class WebMongoVerticle extends AbstractVerticle {
      */
     private void addOneHandler(RoutingContext context) {
         Whisky whisky = Json.decodeValue(context.getBodyAsString(), Whisky.class);
-        jdbc.getConnection(conResult -> {
-            SQLConnection sqlCon = conResult.result();
-            insertOne(whisky, sqlCon, insertResult -> {
-                if (insertResult.failed()) context.response().setStatusCode(400).end();
-                else context.response()
-                        .setStatusCode(201)
-                        .putHeader("content-type", "application/json; charset=utf-8")
-                        .end(Json.encodePrettily(insertResult.result()));
-                sqlCon.close();
-            });
+        insertOne(whisky, insertResult -> {
+            if (insertResult.failed()) context.response().setStatusCode(400).end();
+            else context.response()
+                    .setStatusCode(201)
+                    .putHeader("content-type", "application/json; charset=utf-8")
+                    .end(Json.encodePrettily(insertResult.result()));
         });
     }
 
@@ -192,16 +170,10 @@ public class WebMongoVerticle extends AbstractVerticle {
      * curl -X GET localhost:8080/api/whiskies
      */
     private void getAllHandler(RoutingContext context) {
-        jdbc.getConnection(conResult -> {
-            SQLConnection sqlCon = conResult.result();
-            selectAll(sqlCon, selectResult -> {
-                context.response()
-                        .setStatusCode(200)
-                        .putHeader("content-type", "application/json; charset=utf-8")
-                        .end(Json.encodePrettily(selectResult.result()));
-                sqlCon.close();
-            });
-        });
+        selectAll(selectResult -> context.response()
+                .setStatusCode(200)
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .end(Json.encodePrettily(selectResult.result())));
     }
 
     /**
@@ -211,6 +183,17 @@ public class WebMongoVerticle extends AbstractVerticle {
         context.response()
                 .putHeader("content-type", "text/html; charset=utf-8")
                 .end("<h1>Hello from my first Vert.x 3 application!</h1>");
+    }
+
+    private void delete(Integer id, Handler<AsyncResult<Void>> next) {
+        mongoClient.removeDocument(COLLECTION, new JsonObject().put("_id", id), removeResult -> {
+            if (removeResult.failed()) next.handle(Future.failedFuture(removeResult.cause()));
+            else if (removeResult.result().getRemovedCount() == 0) {
+                next.handle(Future.failedFuture("not found whisky: " + id));
+            } else {
+                next.handle(Future.succeededFuture());
+            }
+        });
     }
 
     private void insertOne(Whisky src, Handler<AsyncResult<Whisky>> next) {
@@ -223,49 +206,47 @@ public class WebMongoVerticle extends AbstractVerticle {
         });
     }
 
-    private void updateOne(Integer id, JsonObject src, SQLConnection sqlCon, Handler<AsyncResult<Whisky>> next) {
-        sqlCon.updateWithParams(UPDATE_NAME_AND_ORIGIN_AND_ID,
-                new JsonArray().add(src.getString("name")).add(src.getString("origin")).add(id),
+    private void update(Integer id, JsonObject src, Handler<AsyncResult<Whisky>> next) {
+        mongoClient.updateCollection(COLLECTION,
+                new JsonObject().put("_id", String.valueOf(id)),
+                new JsonObject().put("$set", src),
                 updateResult -> {
                     if (updateResult.failed()) {
                         next.handle(Future.failedFuture(updateResult.cause()));
-                        return;
-                    }
-                    if (updateResult.result().getUpdated() == 0) {
+                    } else if (updateResult.result().getDocMatched() == 0) {
                         next.handle(Future.failedFuture("not found whisky: " + id));
                     } else {
+                        System.out.println("Upserted: " + updateResult.result().getDocUpsertedId());
                         next.handle(Future.succeededFuture(new Whisky(id, src.getString("name"), src.getString("origin"))));
                     }
                 });
     }
 
-    private void selectOne(Integer id, SQLConnection sqlCon, Handler<AsyncResult<Whisky>> next) {
-        sqlCon.queryWithParams(SELECT_BY_ID, new JsonArray().add(id), selectResult -> {
-            if (selectResult.failed()) {
-                next.handle(Future.failedFuture(selectResult.cause()));
-                return;
-            }
-            if (selectResult.result().getNumRows() == 0) {
-                next.handle(Future.failedFuture("not found whisky with id: " + id));
-            } else if (selectResult.result().getNumRows() == 1) {
-                next.handle(Future.succeededFuture(new Whisky(selectResult.result().getRows().get(0))));
-            } else {
-                next.handle(Future.failedFuture("several whiskies with id: " + id));
-            }
-        });
-
+    private void selectOne(Integer id, Handler<AsyncResult<Whisky>> next) {
+        mongoClient.findWithOptions(COLLECTION,
+                new JsonObject().put("_id", String.valueOf(id)),
+                new FindOptions().setLimit(2),
+                findResult -> {
+                    if (findResult.failed()) {
+                        next.handle(Future.failedFuture(findResult.cause()));
+                    } else if (findResult.result().isEmpty()) {
+                        next.handle(Future.failedFuture("not found whisky with id: " + id));
+                    } else if (findResult.result().size() > 1) {
+                        next.handle(Future.failedFuture("several whiskies with id: " + id));
+                    } else {
+                        next.handle(Future.succeededFuture(Whisky.fromJson(findResult.result().get(0))));
+                    }
+                });
     }
 
-    private void selectAll(SQLConnection sqlCon, Handler<AsyncResult<List<Whisky>>> next) {
-        sqlCon.query(SELECT_ALL, selectResult -> {
-            if (selectResult.failed()) {
-                next.handle(Future.failedFuture(selectResult.cause()));
-                return;
-            }
-            if (selectResult.result().getNumRows() == 0) {
+    private void selectAll(Handler<AsyncResult<List<Whisky>>> next) {
+        mongoClient.find(COLLECTION, new JsonObject(), findResult -> {
+            if (findResult.failed()) {
+                next.handle(Future.failedFuture(findResult.cause()));
+            } else if (findResult.result().isEmpty()) {
                 next.handle(Future.failedFuture("whiskies not found"));
             } else {
-                next.handle(Future.succeededFuture(selectResult.result().getRows().stream().map(Whisky::new).collect(toList())));
+                next.handle(Future.succeededFuture(findResult.result().stream().map(Whisky::fromJson).collect(toList())));
             }
         });
     }
