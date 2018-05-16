@@ -47,8 +47,8 @@ public class Whisky {
     public static Whisky fromJson(JsonObject json) {
         return new Whisky(
                 Optional.of(json)
-                        .map(j -> j.getString("_id", json.getString("ID")))
-                        .map(Integer::valueOf)
+                        .map(j -> j.getValue("_id", json.getValue("ID"))) // for MongoDB
+                        .map(v -> v instanceof Integer ? (Integer) v : Integer.valueOf(String.valueOf(v)))
                         .orElse(-1),
                 Optional.of(json).map(j -> j.getString("name", json.getString("NAME"))).orElse(null),
                 Optional.of(json).map(j -> j.getString("origin", json.getString("ORIGIN"))).orElse(null));
