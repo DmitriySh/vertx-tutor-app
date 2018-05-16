@@ -5,10 +5,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>ru.shishmakov</groupId>
-    <artifactId>vertx-first-app</artifactId>
+    <artifactId>vertx-tutor-app</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <name>vertx-first-app</name>
+    <name>vertx-tutor-app</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
