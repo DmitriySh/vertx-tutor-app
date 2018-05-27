@@ -2,8 +2,9 @@ package ru.shishmakov.blog;
 
 import io.vertx.core.json.JsonObject;
 
-import java.util.Objects;
 import java.util.Optional;
+
+import static java.util.Optional.ofNullable;
 
 public class Whisky {
     private final int id;
@@ -47,11 +48,11 @@ public class Whisky {
     public static Whisky fromJson(JsonObject json) {
         return new Whisky(
                 Optional.of(json)
-                        .map(j -> j.getValue("_id", json.getValue("ID"))) // for MongoDB
+                        .map(j -> j.getValue("_id", j.getValue("ID"))) // for MongoDB
                         .map(v -> v instanceof Integer ? (Integer) v : Integer.valueOf(String.valueOf(v)))
                         .orElse(-1),
-                Optional.of(json).map(j -> j.getString("name", json.getString("NAME"))).orElse(null),
-                Optional.of(json).map(j -> j.getString("origin", json.getString("ORIGIN"))).orElse(null));
+                Optional.of(json).map(j -> j.getString("NAME")).orElse(null),
+                Optional.of(json).map(j -> j.getString("ORIGIN")).orElse(null));
     }
 
     public JsonObject toJson() {
@@ -59,9 +60,10 @@ public class Whisky {
     }
 
     public JsonObject toJson(boolean useMongo) {
-        JsonObject json = new JsonObject().put(useMongo ? "_id" : "ID", String.valueOf(id));
-        if (Objects.nonNull(name)) json.put("NAME", name);
-        if (Objects.nonNull(origin)) json.put("ORIGIN", origin);
+        JsonObject json = new JsonObject()
+                .put(useMongo ? "_id" : "ID", useMongo ? String.valueOf(id) : id);
+        ofNullable(name).ifPresent(t -> json.put("NAME", t));
+        ofNullable(origin).ifPresent(t -> json.put("ORIGIN", t));
         return json;
     }
 
