@@ -55,13 +55,12 @@ public class WebMongoVerticle extends AbstractVerticle {
                 verticleFuture.fail(countResult.cause());
             } else if (countResult.result() == 0L) {
                 // add 2 whines
-                insertOne(buildBowmore(), insertResult1 -> {
-                    if (insertResult1.failed()) {
-                        verticleFuture.fail(insertResult1.cause());
-                    } else insertOne(buildTalisker(), insertResult2 -> {
-                        if (insertResult2.failed()) {
-                            verticleFuture.fail(insertResult2.cause());
-                        } else next.handle(Future.succeededFuture());
+                insertOne(buildBowmore(), insertBowmoreResult -> {
+                    if (insertBowmoreResult.failed()) {
+                        verticleFuture.fail(insertBowmoreResult.cause());
+                    } else insertOne(buildTalisker(), insertTaliskerResult -> {
+                        if (insertTaliskerResult.failed()) verticleFuture.fail(insertTaliskerResult.cause());
+                        else next.handle(Future.succeededFuture());
                     });
                 });
             } else {
