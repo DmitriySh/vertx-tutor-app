@@ -19,6 +19,7 @@ import ru.shishmakov.blog.Whisky;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toList;
@@ -34,6 +35,7 @@ public class WebSqlVerticle extends AbstractVerticle {
     public static final String INSERT_ONE = "INSERT INTO whisky (name, origin) VALUES (?, ?)";
     public static final String UPDATE_NAME_AND_ORIGIN_AND_ID = "UPDATE whisky SET name=?, origin=? WHERE id=?";
     public static final String DELETE_BY_ID = "DELETE FROM whisky WHERE id=?";
+    public static final Pattern digits = Pattern.compile("^[0-9]+$");
 
     private JDBCClient jdbc;
 
@@ -93,8 +95,8 @@ public class WebSqlVerticle extends AbstractVerticle {
                     }
                     if (selectResult.result().getNumRows() == 0) {
                         // add 2 whines
-                        insertOne(buildBowmore(), sqlCon, insertResult1 ->
-                                insertOne(buildTalisker(), sqlCon, insertResult2 -> {
+                        insertOne(buildBowmore(), sqlCon, insertBowmoreResult ->
+                                insertOne(buildTalisker(), sqlCon, insertTaliskerResult -> {
                                     next.handle(Future.succeededFuture());
                                     sqlCon.close();
                                 }));
@@ -152,13 +154,20 @@ public class WebSqlVerticle extends AbstractVerticle {
      * curl -H "Content-Type: application/json" -X PUT -d '{"name":"Jameson","origin":"Ireland"}' localhost:8080/api/whiskies/1
      */
     private void updateOneHandler(RoutingContext context) {
-        Integer id = Optional.of(context.request()).map(r -> r.getParam("id")).map(Integer::valueOf).orElse(null);
+        Integer id = Optional.of(context.request())
+                .map(r -> r.getParam("id"))
+                .filter(n -> digits.matcher(n).find())
+                .map(Integer::valueOf)
+                .orElse(null);
         JsonObject src = context.getBodyAsJson();
         if (isNull(id) || isNull(src)) context.response().setStatusCode(400).end();
         else jdbc.getConnection(conResult -> {
             SQLConnection sqlCon = conResult.result();
             updateOne(id, src, sqlCon, updateResult -> {
-                if (updateResult.failed()) context.response().setStatusCode(404).end();
+                if (updateResult.failed()) context.response()
+                        .setStatusCode(404)
+                        .setStatusMessage(updateResult.cause().getMessage())
+                        .end();
                 else context.response()
                         .setStatusCode(200)
                         .putHeader("content-type", "application/json; charset=utf-8")
@@ -174,13 +183,17 @@ public class WebSqlVerticle extends AbstractVerticle {
     private void getOneHandler(RoutingContext context) {
         Integer id = Optional.of(context.request())
                 .map(r -> r.getParam("id"))
+                .filter(n -> digits.matcher(n).find())
                 .map(Integer::valueOf)
                 .orElse(null);
         if (isNull(id)) context.response().setStatusCode(400).end();
         else jdbc.getConnection(conResult -> {
             SQLConnection sqlCon = conResult.result();
             selectOne(id, sqlCon, selectResult -> {
-                if (selectResult.failed()) context.response().setStatusCode(404).end();
+                if (selectResult.failed()) context.response()
+                        .setStatusCode(404)
+                        .setStatusMessage(selectResult.cause().getMessage())
+                        .end();
                 else context.response()
                         .setStatusCode(200)
                         .putHeader("content-type", "application/json; charset=utf-8")
@@ -196,6 +209,7 @@ public class WebSqlVerticle extends AbstractVerticle {
     private void deleteOneHandler(RoutingContext context) {
         Integer id = Optional.of(context.request())
                 .map(r -> r.getParam("id"))
+                .filter(n -> digits.matcher(n).find())
                 .map(Integer::valueOf)
                 .orElse(null);
         if (isNull(id)) context.response().setStatusCode(400).end();
@@ -216,7 +230,10 @@ public class WebSqlVerticle extends AbstractVerticle {
         jdbc.getConnection(conResult -> {
             SQLConnection sqlCon = conResult.result();
             insertOne(whisky, sqlCon, insertResult -> {
-                if (insertResult.failed()) context.response().setStatusCode(400).end();
+                if (insertResult.failed()) context.response()
+                        .setStatusCode(400)
+                        .setStatusMessage(insertResult.cause().getMessage())
+                        .end();
                 else context.response()
                         .setStatusCode(201)
                         .putHeader("content-type", "application/json; charset=utf-8")
@@ -233,7 +250,11 @@ public class WebSqlVerticle extends AbstractVerticle {
         jdbc.getConnection(conResult -> {
             SQLConnection sqlCon = conResult.result();
             selectAll(sqlCon, selectResult -> {
-                context.response()
+                if (selectResult.failed()) context.response()
+                        .setStatusCode(400)
+                        .setStatusMessage(selectResult.cause().getMessage())
+                        .end();
+                else context.response()
                         .setStatusCode(200)
                         .putHeader("content-type", "application/json; charset=utf-8")
                         .end(Json.encodePrettily(selectResult.result()));
