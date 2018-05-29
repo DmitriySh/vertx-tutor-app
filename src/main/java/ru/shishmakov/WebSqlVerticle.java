@@ -116,10 +116,12 @@ public class WebSqlVerticle extends AbstractVerticle {
         Router router = Router.router(vertx);
         router.route("/").handler(this::welcomeRootHandler);
         router.route("/assets/*").handler(StaticHandler.create("assets"));
-        router.route("/api/whiskies*").handler(BodyHandler.create()); //resource not found
+
         router.get("/api/whiskies").handler(this::getAllHandler);
-        router.get("/api/whiskies/:id").handler(this::getOneHandler);
+        router.route("/api/whiskies*").handler(BodyHandler.create()); //resource not found
+
         router.post("/api/whiskies").handler(this::addOneHandler);
+        router.get("/api/whiskies/:id").handler(this::getOneHandler);
         router.put("/api/whiskies/:id").handler(this::updateOneHandler);
         router.delete("/api/whiskies/:id").handler(this::deleteOneHandler);
         vertx.createHttpServer()
@@ -170,7 +172,10 @@ public class WebSqlVerticle extends AbstractVerticle {
      * curl -X GET localhost:8080/api/whiskies/1
      */
     private void getOneHandler(RoutingContext context) {
-        Integer id = Optional.of(context.request()).map(r -> r.getParam("id")).map(Integer::valueOf).orElse(null);
+        Integer id = Optional.of(context.request())
+                .map(r -> r.getParam("id"))
+                .map(Integer::valueOf)
+                .orElse(null);
         if (isNull(id)) context.response().setStatusCode(400).end();
         else jdbc.getConnection(conResult -> {
             SQLConnection sqlCon = conResult.result();
@@ -189,7 +194,10 @@ public class WebSqlVerticle extends AbstractVerticle {
      * curl -X DELETE localhost:8080/api/whiskies/2
      */
     private void deleteOneHandler(RoutingContext context) {
-        Integer id = Optional.of(context.request()).map(r -> r.getParam("id")).map(Integer::valueOf).orElse(null);
+        Integer id = Optional.of(context.request())
+                .map(r -> r.getParam("id"))
+                .map(Integer::valueOf)
+                .orElse(null);
         if (isNull(id)) context.response().setStatusCode(400).end();
         else jdbc.getConnection(conResult -> {
             SQLConnection sqlCon = conResult.result();
