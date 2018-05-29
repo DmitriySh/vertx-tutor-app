@@ -17,6 +17,7 @@ import ru.shishmakov.blog.Whisky;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toList;
@@ -27,6 +28,7 @@ import static java.util.stream.Collectors.toList;
 public class WebMongoVerticle extends AbstractVerticle {
 
     public static final String COLLECTION = "whiskies";
+    public static final Pattern digits = Pattern.compile("^[0-9]+$");
 
     private MongoClient mongoClient;
 
@@ -78,10 +80,12 @@ public class WebMongoVerticle extends AbstractVerticle {
         Router router = Router.router(vertx);
         router.route("/").handler(this::welcomeRootHandler);
         router.route("/assets/*").handler(StaticHandler.create("assets"));
-        router.route("/api/whiskies*").handler(BodyHandler.create()); //resource not found
+
         router.get("/api/whiskies").handler(this::getAllHandler);
-        router.get("/api/whiskies/:id").handler(this::getOneHandler);
+        router.route("/api/whiskies*").handler(BodyHandler.create()); //resource not found
+
         router.post("/api/whiskies").handler(this::addOneHandler);
+        router.get("/api/whiskies/:id").handler(this::getOneHandler);
         router.put("/api/whiskies/:id").handler(this::updateOneHandler);
         router.delete("/api/whiskies/:id").handler(this::deleteOneHandler);
         vertx.createHttpServer()
@@ -112,11 +116,18 @@ public class WebMongoVerticle extends AbstractVerticle {
      * curl -H "Content-Type: application/json" -X PUT -d '{"name":"Jameson","origin":"Ireland"}' localhost:8080/api/whiskies/1
      */
     private void updateOneHandler(RoutingContext context) {
-        Integer id = Optional.of(context.request()).map(r -> r.getParam("id")).map(Integer::valueOf).orElse(null);
+        Integer id = Optional.of(context.request())
+                .map(r -> r.getParam("id"))
+                .filter(n -> digits.matcher(n).find())
+                .map(Integer::valueOf)
+                .orElse(null);
         JsonObject src = context.getBodyAsJson();
         if (isNull(id) || isNull(src)) context.response().setStatusCode(400).end();
         else update(id, src, updateResult -> {
-            if (updateResult.failed()) context.response().setStatusCode(404).end();
+            if (updateResult.failed()) context.response()
+                    .setStatusCode(404)
+                    .setStatusMessage(updateResult.cause().getMessage())
+                    .end();
             else context.response()
                     .setStatusCode(200)
                     .putHeader("content-type", "application/json; charset=utf-8")
@@ -128,10 +139,17 @@ public class WebMongoVerticle extends AbstractVerticle {
      * curl -X GET localhost:8080/api/whiskies/1
      */
     private void getOneHandler(RoutingContext context) {
-        Integer id = Optional.of(context.request()).map(r -> r.getParam("id")).map(Integer::valueOf).orElse(null);
+        Integer id = Optional.of(context.request())
+                .map(r -> r.getParam("id"))
+                .filter(n -> digits.matcher(n).find())
+                .map(Integer::valueOf)
+                .orElse(null);
         if (isNull(id)) context.response().setStatusCode(400).end();
         else selectOne(id, selectResult -> {
-            if (selectResult.failed()) context.response().setStatusCode(404).end();
+            if (selectResult.failed()) context.response()
+                    .setStatusCode(404)
+                    .setStatusMessage(selectResult.cause().getMessage())
+                    .end();
             else context.response()
                     .setStatusCode(200)
                     .putHeader("content-type", "application/json; charset=utf-8")
@@ -143,12 +161,13 @@ public class WebMongoVerticle extends AbstractVerticle {
      * curl -X DELETE localhost:8080/api/whiskies/2
      */
     private void deleteOneHandler(RoutingContext context) {
-        Integer id = Optional.of(context.request()).map(r -> r.getParam("id")).map(Integer::valueOf).orElse(null);
+        Integer id = Optional.of(context.request())
+                .map(r -> r.getParam("id"))
+                .filter(n -> digits.matcher(n).find())
+                .map(Integer::valueOf)
+                .orElse(null);
         if (isNull(id)) context.response().setStatusCode(400).end();
-        else delete(id, deleteResult -> {
-            if (deleteResult.failed()) context.response().setStatusCode(400).end();
-            else context.response().setStatusCode(204).end();
-        });
+        else delete(id, deleteResult -> context.response().setStatusCode(204).end());
     }
 
     /**
@@ -157,7 +176,10 @@ public class WebMongoVerticle extends AbstractVerticle {
     private void addOneHandler(RoutingContext context) {
         Whisky whisky = Json.decodeValue(context.getBodyAsString(), Whisky.class);
         insertOne(whisky, insertResult -> {
-            if (insertResult.failed()) context.response().setStatusCode(400).end();
+            if (insertResult.failed()) context.response()
+                    .setStatusCode(400)
+                    .setStatusMessage(insertResult.cause().getMessage())
+                    .end();
             else context.response()
                     .setStatusCode(201)
                     .putHeader("content-type", "application/json; charset=utf-8")
@@ -169,10 +191,16 @@ public class WebMongoVerticle extends AbstractVerticle {
      * curl -X GET localhost:8080/api/whiskies
      */
     private void getAllHandler(RoutingContext context) {
-        selectAll(selectResult -> context.response()
-                .setStatusCode(200)
-                .putHeader("content-type", "application/json; charset=utf-8")
-                .end(Json.encodePrettily(selectResult.result())));
+        selectAll(selectResult -> {
+            if (selectResult.failed()) context.response()
+                    .setStatusCode(400)
+                    .setStatusMessage(selectResult.cause().getMessage())
+                    .end();
+            context.response()
+                    .setStatusCode(200)
+                    .putHeader("content-type", "application/json; charset=utf-8")
+                    .end(Json.encodePrettily(selectResult.result()));
+        });
     }
 
     /**
