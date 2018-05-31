@@ -19,6 +19,7 @@ import ru.shishmakov.blog.Whisky;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
 import static java.util.Objects.isNull;
@@ -41,10 +42,12 @@ public class WebSqlVerticle extends AbstractVerticle {
 
     @Override
     public void start(Future<Void> verticleFuture) {
-        this.jdbc = JDBCClient.createShared(vertx, config()
-                        .put("url", "jdbc:hsqldb:file:db/whiskies")
-                        .put("driver_class", "org.hsqldb.jdbcDriver"),
-                "ds-whisky");
+        this.jdbc = JDBCClient.createShared(vertx, ((UnaryOperator<JsonObject>) conf -> {
+            conf.getMap().putIfAbsent("url", "jdbc:hsqldb:file:db/whiskies");
+            conf.getMap().putIfAbsent("driver_class", "org.hsqldb.jdbcDriver");
+            return conf;
+        }).apply(config()), "ds-whisky");
+
         startBackend(con -> initDefaultData(
                 con,
                 initialized -> startWeb(httpServer -> completeStartup(httpServer, verticleFuture)),
