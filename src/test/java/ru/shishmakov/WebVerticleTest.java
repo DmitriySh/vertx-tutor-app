@@ -18,6 +18,9 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.List;
 
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toList;
+
 /**
  * Unit tests for vert.x web app
  */
@@ -47,8 +50,8 @@ public class WebVerticleTest {
     public void getAssetsIndexShouldBeAvailable(TestContext context) {
         Async async = context.async();
         vertx.createHttpClient().getNow(port, "localhost", "/assets/index.html", response -> {
-            context.assertEquals(200, response.statusCode(), "status code is not 'ok'");
-            context.assertEquals("text/html;charset=UTF-8", response.headers().get("content-type"), "content-type is not equal");
+            context.assertEquals(200, response.statusCode(), "status code isn't 'ok'");
+            context.assertEquals("text/html;charset=UTF-8", response.headers().get("content-type"), "content-type isn't equal");
             response.bodyHandler(body -> {
                 context.assertTrue(body.toString().contains("<title>My Whisky Collection</title>"), "body has not correct answer");
                 async.complete();
@@ -60,7 +63,7 @@ public class WebVerticleTest {
     public void getUnavailablePageShouldGetResponse(TestContext context) {
         Async async = context.async();
         vertx.createHttpClient().getNow(port, "localhost", "/unavailablepage.html", response -> {
-            context.assertEquals(404, response.statusCode(), "status code is not 'bad request'");
+            context.assertEquals(404, response.statusCode(), "status code isn't 'bad request'");
             response.bodyHandler(body -> {
                 String text = body.toString();
                 context.assertNotNull(text, "body is empty");
@@ -78,13 +81,13 @@ public class WebVerticleTest {
                 .putHeader("content-type", "application/json")
                 .putHeader("content-length", String.valueOf(src.length()))
                 .handler(response -> {
-                    context.assertEquals(201, response.statusCode(), "status code is not 'created'");
-                    context.assertEquals("application/json; charset=utf-8", response.headers().get("content-type"), "content-type is not equal");
+                    context.assertEquals(201, response.statusCode(), "status code isn't 'created'");
+                    context.assertEquals("application/json; charset=utf-8", response.headers().get("content-type"), "content-type isn't equal");
                     response.bodyHandler(body -> {
                         Whisky whisky = Json.decodeValue(body, Whisky.class);
-                        context.assertEquals("Jameson", whisky.getName(), "whisky name is not equal");
-                        context.assertEquals("Ireland", whisky.getOrigin(), "whisky origin is not equal");
-                        context.assertNotNull(whisky.getId(), "whisky is not defined");
+                        context.assertEquals("Jameson", whisky.getName(), "whisky name isn't equal");
+                        context.assertEquals("Ireland", whisky.getOrigin(), "whisky origin isn't equal");
+                        context.assertNotNull(whisky.getId(), "whisky isn't defined");
                         async.complete();
                     });
                 })
@@ -96,11 +99,39 @@ public class WebVerticleTest {
     public void getApiShouldReturnAllWhiskies(TestContext context) {
         Async async = context.async();
         vertx.createHttpClient().getNow(port, "localhost", "/api/whiskies/", response -> {
-            context.assertEquals(200, response.statusCode(), "status code is not 'ok'");
+            context.assertEquals(200, response.statusCode(), "status code isn't 'ok'");
             response.bodyHandler(body -> {
                 context.assertNotNull(body.toString(), "body is empty");
-                context.assertEquals(2, Json.decodeValue(body, new TypeReference<List<Whisky>>() {
-                }).size(), "assets have to have default count of whiskies");
+                context.assertEquals(asList(0, 1), Json.decodeValue(body, new TypeReference<List<Whisky>>() {
+                }).stream().map(Whisky::getId).collect(toList()), "whiskies ids aren't default values");
+                async.complete();
+            });
+        });
+    }
+
+    @Test
+    public void getApiShouldReturnFirstWhiskyIfIdExists(TestContext context) {
+        final int id = 1;
+        Async async = context.async();
+        vertx.createHttpClient().getNow(port, "localhost", "/api/whiskies/" + id, response -> {
+            context.assertEquals(200, response.statusCode(), "status code isn't 'ok'");
+            response.bodyHandler(body -> {
+                context.assertNotNull(body.toString(), "body is empty");
+                context.assertEquals(id, Json.decodeValue(body, Whisky.class).getId(), "whisky id is incorrect");
+                async.complete();
+            });
+        });
+    }
+
+    @Test
+    public void getApiShouldNotReturnFirstWhiskyIfIdNotExists(TestContext context) {
+        final int id = 2;
+        Async async = context.async();
+        vertx.createHttpClient().getNow(port, "localhost", "/api/whiskies/" + id, response -> {
+            context.assertEquals(404, response.statusCode(), "status code isn't 'not found'");
+            context.assertTrue(response.statusMessage().contains("not found whisky with id"), "message is incorrect");
+            response.bodyHandler(body -> {
+                context.assertEquals(0, body.length(), "body isn't empty");
                 async.complete();
             });
         });
