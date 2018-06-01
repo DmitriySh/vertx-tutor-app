@@ -75,8 +75,8 @@ public class WebVerticleTest {
 
     @Test
     public void postApiShouldAddOneWhisky(TestContext context) {
-        Async async = context.async();
         String src = Json.encodePrettily(new Whisky("Jameson", "Ireland"));
+        Async async = context.async();
         vertx.createHttpClient().post(port, "localhost", "/api/whiskies/")
                 .putHeader("content-type", "application/json")
                 .putHeader("content-length", String.valueOf(src.length()))
@@ -85,9 +85,9 @@ public class WebVerticleTest {
                     context.assertEquals("application/json; charset=utf-8", response.headers().get("content-type"), "content-type isn't equal");
                     response.bodyHandler(body -> {
                         Whisky whisky = Json.decodeValue(body, Whisky.class);
+                        context.assertEquals(2, whisky.getId(), "whisky id doesn't next in consequence");
                         context.assertEquals("Jameson", whisky.getName(), "whisky name isn't equal");
                         context.assertEquals("Ireland", whisky.getOrigin(), "whisky origin isn't equal");
-                        context.assertNotNull(whisky.getId(), "whisky isn't defined");
                         async.complete();
                     });
                 })
@@ -135,6 +135,47 @@ public class WebVerticleTest {
                 async.complete();
             });
         });
+    }
+
+    @Test
+    public void putApiShouldChangeWhiskyIfIdExists(TestContext context) {
+        final int id = 1;
+        String src = Json.encodePrettily(new Whisky("The new Whisky", "The new Origin"));
+        Async async = context.async();
+        vertx.createHttpClient().put(port, "localhost", "/api/whiskies/" + id)
+                .putHeader("content-type", "application/json")
+                .putHeader("content-length", String.valueOf(src.length()))
+                .handler(response -> {
+                    context.assertEquals(200, response.statusCode(), "status code isn't 'ok'");
+                    response.bodyHandler(body -> {
+                        Whisky whisky = Json.decodeValue(body.toString(), Whisky.class);
+                        context.assertEquals(id, whisky.getId(), "whisky id isn't equal");
+                        context.assertEquals("The new Whisky", whisky.getName(), "whisky name isn't equal");
+                        context.assertEquals("The new Origin", whisky.getOrigin(), "whisky origin isn't equal");
+                        async.complete();
+                    });
+                })
+                .write(src)
+                .end();
+    }
+
+    @Test
+    public void putApiShouldFailWhiskyChangesIfIdNotExists(TestContext context) {
+        final int id = 5;
+        String src = Json.encodePrettily(new Whisky("The new Whisky", "The new Origin"));
+        Async async = context.async();
+        vertx.createHttpClient().put(port, "localhost", "/api/whiskies/" + id)
+                .putHeader("content-type", "application/json")
+                .putHeader("content-length", String.valueOf(src.length()))
+                .handler(response -> {
+                    context.assertEquals(404, response.statusCode(), "status code isn't 'not found'");
+                    response.bodyHandler(body -> {
+                        context.assertEquals(0, body.length(), "body isn't empty");
+                        async.complete();
+                    });
+                })
+                .write(src)
+                .end();
     }
 
     private int buildLocalPort() throws IOException {
