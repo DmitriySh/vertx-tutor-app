@@ -3,6 +3,7 @@ package ru.shishmakov;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
@@ -110,7 +111,7 @@ public class WebVerticleTest {
     }
 
     @Test
-    public void getApiShouldReturnFirstWhiskyIfIdExists(TestContext context) {
+    public void getApiShouldReturnWhisky(TestContext context) {
         final int id = 1;
         Async async = context.async();
         vertx.createHttpClient().getNow(port, "localhost", "/api/whiskies/" + id, response -> {
@@ -124,8 +125,8 @@ public class WebVerticleTest {
     }
 
     @Test
-    public void getApiShouldNotReturnFirstWhiskyIfIdNotExists(TestContext context) {
-        final int id = 2;
+    public void getApiShouldNotReturnWhiskyIfIdNotExists(TestContext context) {
+        final int id = 50;
         Async async = context.async();
         vertx.createHttpClient().getNow(port, "localhost", "/api/whiskies/" + id, response -> {
             context.assertEquals(404, response.statusCode(), "status code isn't 'not found'");
@@ -138,7 +139,7 @@ public class WebVerticleTest {
     }
 
     @Test
-    public void putApiShouldChangeWhiskyIfIdExists(TestContext context) {
+    public void putApiShouldChangeWhisky(TestContext context) {
         final int id = 1;
         String src = Json.encodePrettily(new Whisky("The new Whisky", "The new Origin"));
         Async async = context.async();
@@ -161,7 +162,7 @@ public class WebVerticleTest {
 
     @Test
     public void putApiShouldFailWhiskyChangesIfIdNotExists(TestContext context) {
-        final int id = 5;
+        final int id = 50;
         String src = Json.encodePrettily(new Whisky("The new Whisky", "The new Origin"));
         Async async = context.async();
         vertx.createHttpClient().put(port, "localhost", "/api/whiskies/" + id)
@@ -176,6 +177,28 @@ public class WebVerticleTest {
                 })
                 .write(src)
                 .end();
+    }
+
+    @Test
+    public void deleteApiShouldRemoveWhisky(TestContext context) {
+        final int id = 1;
+        Async async = context.async();
+        HttpClient client = vertx.createHttpClient();
+        client.getNow(port, "localhost", "/api/whiskies/" + id, getResponse -> {
+            context.assertEquals(200, getResponse.statusCode(), "status code isn't 'ok'");
+
+            client.delete(port, "localhost", "/api/whiskies/" + id, deleteResponse -> {
+                context.assertEquals(204, deleteResponse.statusCode(), "status code isn't 'no content'");
+                deleteResponse.bodyHandler(body -> {
+                    context.assertEquals(0, body.length(), "body isn't empty");
+
+                    client.getNow(port, "localhost", "/api/whiskies/" + id, getResponse2 -> {
+                        context.assertEquals(404, getResponse2.statusCode(), "status code isn't 'not found'");
+                        async.complete();
+                    });
+                });
+            }).end();
+        });
     }
 
     private int buildLocalPort() throws IOException {
