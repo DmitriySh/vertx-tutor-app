@@ -28,7 +28,7 @@ public class SimpleVerticleTest {
         port = buildLocalPort();
         DeploymentOptions options = new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
         vertx = Vertx.vertx();
-        vertx.deployVerticle(SimpleVerticle.class.getName(), options, context.asyncAssertSuccess());
+        vertx.deployVerticle(SimpleVerticle.class, options, context.asyncAssertSuccess());
     }
 
     @After

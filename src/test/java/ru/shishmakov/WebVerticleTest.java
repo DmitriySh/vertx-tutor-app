@@ -1,5 +1,6 @@
 package ru.shishmakov;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
@@ -15,6 +16,7 @@ import ru.shishmakov.blog.Whisky;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.List;
 
 /**
  * Unit tests for vert.x web app
@@ -33,7 +35,7 @@ public class WebVerticleTest {
                 .put("url", "jdbc:hsqldb:mem:test?shutdown=true")
                 .put("driver_class", "org.hsqldb.jdbcDriver"));
         vertx = Vertx.vertx();
-        vertx.deployVerticle(WebSqlVerticle.class.getName(), options, context.asyncAssertSuccess());
+        vertx.deployVerticle(WebSqlVerticle.class, options, context.asyncAssertSuccess());
     }
 
     @After
@@ -42,12 +44,12 @@ public class WebVerticleTest {
     }
 
     @Test
-    public void checkGetAssetsIndexShouldBeAvailable(TestContext context) {
+    public void getAssetsIndexShouldBeAvailable(TestContext context) {
         Async async = context.async();
-        vertx.createHttpClient().getNow(port, "localhost", "/assets/index.html", rh -> {
-            context.assertEquals(200, rh.statusCode(), "status code is not equal");
-            context.assertEquals("text/html;charset=UTF-8", rh.headers().get("content-type"), "content-type is not equal");
-            rh.bodyHandler(body -> {
+        vertx.createHttpClient().getNow(port, "localhost", "/assets/index.html", response -> {
+            context.assertEquals(200, response.statusCode(), "status code is not 'ok'");
+            context.assertEquals("text/html;charset=UTF-8", response.headers().get("content-type"), "content-type is not equal");
+            response.bodyHandler(body -> {
                 context.assertTrue(body.toString().contains("<title>My Whisky Collection</title>"), "body has not correct answer");
                 async.complete();
             });
@@ -55,16 +57,30 @@ public class WebVerticleTest {
     }
 
     @Test
-    public void checkPostShouldAddOneWhisky(TestContext context) {
+    public void getUnavailablePageShouldGetResponse(TestContext context) {
+        Async async = context.async();
+        vertx.createHttpClient().getNow(port, "localhost", "/unavailablepage.html", response -> {
+            context.assertEquals(404, response.statusCode(), "status code is not 'bad request'");
+            response.bodyHandler(body -> {
+                String text = body.toString();
+                context.assertNotNull(text, "body is empty");
+                context.assertTrue(text.contains("Resource not found"), "not 404 page");
+                async.complete();
+            });
+        });
+    }
+
+    @Test
+    public void postApiShouldAddOneWhisky(TestContext context) {
         Async async = context.async();
         String src = Json.encodePrettily(new Whisky("Jameson", "Ireland"));
         vertx.createHttpClient().post(port, "localhost", "/api/whiskies/")
                 .putHeader("content-type", "application/json")
                 .putHeader("content-length", String.valueOf(src.length()))
-                .handler(h -> {
-                    context.assertEquals(201, h.statusCode(), "status code is not equal");
-                    context.assertEquals("application/json; charset=utf-8", h.headers().get("content-type"), "content-type is not equal");
-                    h.bodyHandler(body -> {
+                .handler(response -> {
+                    context.assertEquals(201, response.statusCode(), "status code is not 'created'");
+                    context.assertEquals("application/json; charset=utf-8", response.headers().get("content-type"), "content-type is not equal");
+                    response.bodyHandler(body -> {
                         Whisky whisky = Json.decodeValue(body, Whisky.class);
                         context.assertEquals("Jameson", whisky.getName(), "whisky name is not equal");
                         context.assertEquals("Ireland", whisky.getOrigin(), "whisky origin is not equal");
@@ -74,6 +90,20 @@ public class WebVerticleTest {
                 })
                 .write(src)
                 .end();
+    }
+
+    @Test
+    public void getApiShouldReturnAllWhiskies(TestContext context) {
+        Async async = context.async();
+        vertx.createHttpClient().getNow(port, "localhost", "/api/whiskies/", response -> {
+            context.assertEquals(200, response.statusCode(), "status code is not 'ok'");
+            response.bodyHandler(body -> {
+                context.assertNotNull(body.toString(), "body is empty");
+                context.assertEquals(2, Json.decodeValue(body, new TypeReference<List<Whisky>>() {
+                }).size(), "assets have to have default count of whiskies");
+                async.complete();
+            });
+        });
     }
 
     private int buildLocalPort() throws IOException {
