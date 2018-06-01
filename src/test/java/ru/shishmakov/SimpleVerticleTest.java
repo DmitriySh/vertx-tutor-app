@@ -14,8 +14,6 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.net.ServerSocket;
 
-import static java.util.Objects.nonNull;
-
 /**
  * Unit test for vert.x core app
  */
@@ -42,12 +40,15 @@ public class SimpleVerticleTest {
     public void verticleShouldResponseSuccess(TestContext context) {
         Async async = context.async();
         vertx.createHttpClient()
-                .getNow(port, "localhost", "/", response -> response.handler(body -> {
-                    String text = body.toString();
-                    context.assertTrue(nonNull(text), "body is empty");
-                    context.assertTrue(text.contains("Hello"), "not success answer");
-                    async.complete();
-                }));
+                .getNow(port, "localhost", "/", response -> {
+                    context.assertEquals(200, response.statusCode(), "status code is not 'ok'");
+                    response.handler(body -> {
+                        String text = body.toString();
+                        context.assertNotNull(text, "body is empty");
+                        context.assertTrue(text.contains("Hello"), "not welcome page");
+                        async.complete();
+                    });
+                });
     }
 
     private int buildLocalPort() throws IOException {
