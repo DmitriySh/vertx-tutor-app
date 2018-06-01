@@ -41,7 +41,7 @@ public class SimpleVerticleTest {
         Async async = context.async();
         vertx.createHttpClient()
                 .getNow(port, "localhost", "/", response -> {
-                    context.assertEquals(200, response.statusCode(), "status code is not 'ok'");
+                    context.assertEquals(200, response.statusCode(), "status code isn't 'ok'");
                     response.handler(body -> {
                         String text = body.toString();
                         context.assertNotNull(text, "body is empty");
