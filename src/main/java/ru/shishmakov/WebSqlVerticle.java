@@ -45,6 +45,7 @@ public class WebSqlVerticle extends AbstractVerticle {
         this.jdbc = JDBCClient.createShared(vertx, ((UnaryOperator<JsonObject>) conf -> {
             conf.getMap().putIfAbsent("url", "jdbc:hsqldb:file:db/whiskies");
             conf.getMap().putIfAbsent("driver_class", "org.hsqldb.jdbcDriver");
+            conf.getMap().putIfAbsent("max_pool_size", 10);
             return conf;
         }).apply(config()), "ds-whisky");
 
