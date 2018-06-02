@@ -7,6 +7,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.mongo.FindOptions;
 import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -218,13 +219,20 @@ public class WebMongoVerticle extends AbstractVerticle {
     }
 
     private void insertOne(Whisky src, Handler<AsyncResult<Whisky>> next) {
-        mongoClient.insert(COLLECTION, src.toJson(true), insertResult -> {
-            if (insertResult.failed()) next.handle(Future.failedFuture(insertResult.cause()));
-            else {
-                int id = Integer.parseInt(insertResult.result());
-                next.handle(Future.succeededFuture(new Whisky(id, src.getName(), src.getOrigin())));
-            }
-        });
+        mongoClient.findWithOptions(COLLECTION,
+                new JsonObject(),
+                new FindOptions().setSort(new JsonObject().put("_id", -1)).setLimit(1),
+                findResult -> {
+                    if (findResult.failed()) next.handle(Future.failedFuture(findResult.cause()));
+                    else {
+                        int nextId = findResult.result().isEmpty() ? 0 : findResult.result().get(0).getInteger("_id") + 1;
+                        mongoClient.insert(COLLECTION, src.toJson(true).put("_id", nextId), insertResult -> {
+                            if (insertResult.failed()) next.handle(Future.failedFuture(insertResult.cause()));
+                            else
+                                next.handle(Future.succeededFuture(new Whisky(nextId, src.getName(), src.getOrigin())));
+                        });
+                    }
+                });
     }
 
     private void update(Integer id, JsonObject src, Handler<AsyncResult<Whisky>> next) {

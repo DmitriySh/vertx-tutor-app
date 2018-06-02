@@ -47,10 +47,7 @@ public class Whisky {
 
     public static Whisky fromJson(JsonObject json) {
         return new Whisky(
-                Optional.of(json)
-                        .map(j -> j.getValue("_id", j.getValue("ID"))) // for MongoDB
-                        .map(v -> v instanceof Integer ? (Integer) v : Integer.valueOf(String.valueOf(v)))
-                        .orElse(-1),
+                Optional.of(json).map(j -> j.getInteger("_id", j.getInteger("ID"))).orElse(-1),
                 Optional.of(json).map(j -> j.getString("NAME")).orElse(null),
                 Optional.of(json).map(j -> j.getString("ORIGIN")).orElse(null));
     }
@@ -60,8 +57,7 @@ public class Whisky {
     }
 
     public JsonObject toJson(boolean useMongo) {
-        JsonObject json = new JsonObject()
-                .put(useMongo ? "_id" : "ID", useMongo ? String.valueOf(id) : id);
+        JsonObject json = new JsonObject().put(useMongo ? "_id" : "ID", id);
         ofNullable(name).ifPresent(t -> json.put("NAME", t));
         ofNullable(origin).ifPresent(t -> json.put("ORIGIN", t));
         return json;
