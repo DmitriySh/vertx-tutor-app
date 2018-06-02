@@ -7,7 +7,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.mongo.FindOptions;
 import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -55,19 +54,18 @@ public class WebMongoVerticle extends AbstractVerticle {
         mongoClient.count(COLLECTION, new JsonObject(), countResult -> {
             if (countResult.failed()) {
                 verticleFuture.fail(countResult.cause());
-            } else if (countResult.result() == 0L) {
+                return;
+            }
+            if (countResult.result() == 0L) {
                 // add 2 whines
                 insertOne(buildBowmore(), insertBowmoreResult -> {
-                    if (insertBowmoreResult.failed()) {
-                        verticleFuture.fail(insertBowmoreResult.cause());
-                    } else insertOne(buildTalisker(), insertTaliskerResult -> {
+                    if (insertBowmoreResult.failed()) verticleFuture.fail(insertBowmoreResult.cause());
+                    else insertOne(buildTalisker(), insertTaliskerResult -> {
                         if (insertTaliskerResult.failed()) verticleFuture.fail(insertTaliskerResult.cause());
                         else next.handle(Future.succeededFuture());
                     });
                 });
-            } else {
-                next.handle(Future.succeededFuture());
-            }
+            } else next.handle(Future.succeededFuture());
         });
     }
 
@@ -215,11 +213,7 @@ public class WebMongoVerticle extends AbstractVerticle {
     private void delete(Integer id, Handler<AsyncResult<Void>> next) {
         mongoClient.removeDocument(COLLECTION, new JsonObject().put("_id", id), removeResult -> {
             if (removeResult.failed()) next.handle(Future.failedFuture(removeResult.cause()));
-            else if (removeResult.result().getRemovedCount() == 0) {
-                next.handle(Future.failedFuture("not found whisky: " + id));
-            } else {
-                next.handle(Future.succeededFuture());
-            }
+            else next.handle(Future.succeededFuture());
         });
     }
 
@@ -243,27 +237,21 @@ public class WebMongoVerticle extends AbstractVerticle {
                     } else if (updateResult.result().getDocMatched() == 0) {
                         next.handle(Future.failedFuture("not found whisky: " + id));
                     } else {
-                        System.out.println("Upserted: " + updateResult.result().getDocUpsertedId());
                         next.handle(Future.succeededFuture(new Whisky(id, src.getString("name"), src.getString("origin"))));
                     }
                 });
     }
 
     private void selectOne(Integer id, Handler<AsyncResult<Whisky>> next) {
-        mongoClient.findWithOptions(COLLECTION,
-                new JsonObject().put("_id", String.valueOf(id)),
-                new FindOptions().setLimit(2),
-                findResult -> {
-                    if (findResult.failed()) {
-                        next.handle(Future.failedFuture(findResult.cause()));
-                    } else if (findResult.result().isEmpty()) {
-                        next.handle(Future.failedFuture("not found whisky with id: " + id));
-                    } else if (findResult.result().size() > 1) {
-                        next.handle(Future.failedFuture("several whiskies with id: " + id));
-                    } else {
-                        next.handle(Future.succeededFuture(Whisky.fromJson(findResult.result().get(0))));
-                    }
-                });
+        mongoClient.findOne(COLLECTION, new JsonObject().put("_id", String.valueOf(id)), null, findResult -> {
+            if (findResult.failed()) {
+                next.handle(Future.failedFuture(findResult.cause()));
+            } else if (findResult.result().isEmpty()) {
+                next.handle(Future.failedFuture("not found whisky with id: " + id));
+            } else {
+                next.handle(Future.succeededFuture(Whisky.fromJson(findResult.result())));
+            }
+        });
     }
 
     private void selectAll(Handler<AsyncResult<List<Whisky>>> next) {
