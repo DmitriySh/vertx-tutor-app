@@ -26,7 +26,7 @@ import static java.util.stream.Collectors.toList;
  * Unit tests for vert.x web app
  */
 @RunWith(VertxUnitRunner.class)
-public class WebVerticleTest {
+public class WebSqlVerticleTest {
 
     private int port;
     private Vertx vertx;
