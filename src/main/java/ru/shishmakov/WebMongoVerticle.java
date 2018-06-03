@@ -9,6 +9,7 @@ import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.FindOptions;
 import io.vertx.ext.mongo.MongoClient;
+import io.vertx.ext.mongo.UpdateOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -20,6 +21,7 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 import static java.util.Objects.isNull;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -28,13 +30,14 @@ import static java.util.stream.Collectors.toList;
 public class WebMongoVerticle extends AbstractVerticle {
 
     public static final String COLLECTION = "whiskies";
+    public static final String SEQUENCE = "whiskies_seq";
     public static final Pattern digits = Pattern.compile("^[0-9]+$");
 
     private MongoClient mongoClient;
 
     @Override
     public void start(Future<Void> verticleFuture) {
-        this.mongoClient = MongoClient.createShared(vertx, config());
+        this.mongoClient = MongoClient.createShared(vertx, config(), "ds-whisky");
         initDefaultData(
                 initialized -> startWeb(httpServer -> completeStartup(httpServer, verticleFuture)),
                 verticleFuture);
@@ -218,18 +221,22 @@ public class WebMongoVerticle extends AbstractVerticle {
         });
     }
 
+    /**
+     * First of all we need to generate a sequence number and then save the new document
+     */
     private void insertOne(Whisky src, Handler<AsyncResult<Whisky>> next) {
-        mongoClient.findWithOptions(COLLECTION,
+        mongoClient.findOneAndUpdateWithOptions(SEQUENCE,
                 new JsonObject(),
-                new FindOptions().setSort(new JsonObject().put("_id", -1)).setLimit(1),
+                new JsonObject().put("$inc", new JsonObject().put("number", 1)),
+                new FindOptions(),
+                new UpdateOptions().setUpsert(true),
                 findResult -> {
                     if (findResult.failed()) next.handle(Future.failedFuture(findResult.cause()));
                     else {
-                        int nextId = findResult.result().isEmpty() ? 0 : findResult.result().get(0).getInteger("_id") + 1;
+                        Integer nextId = ofNullable(findResult.result()).map(j -> j.getInteger("number")).orElse(0);
                         mongoClient.insert(COLLECTION, src.toJson(true).put("_id", nextId), insertResult -> {
-                            if (insertResult.failed()) {
-                                next.handle(Future.failedFuture(insertResult.cause()));
-                            } else {
+                            if (insertResult.failed()) next.handle(Future.failedFuture(insertResult.cause()));
+                            else {
                                 next.handle(Future.succeededFuture(new Whisky(nextId, src.getName(), src.getOrigin())));
                             }
                         });
