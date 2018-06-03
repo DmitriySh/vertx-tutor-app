@@ -131,7 +131,7 @@ public class WebMongoVerticle extends AbstractVerticle {
                 .orElse(null);
         JsonObject src = context.getBodyAsJson();
         if (isNull(id) || isNull(src)) context.response().setStatusCode(400).end();
-        else update(id, src, updateResult -> {
+        else updateOne(id, src, updateResult -> {
             if (updateResult.failed()) context.response()
                     .setStatusCode(404)
                     .setStatusMessage(updateResult.cause().getMessage())
@@ -250,17 +250,19 @@ public class WebMongoVerticle extends AbstractVerticle {
                 });
     }
 
-    private void update(Integer id, JsonObject src, Handler<AsyncResult<Whisky>> next) {
-        mongoClient.updateCollection(COLLECTION,
+    private void updateOne(Integer id, JsonObject src, Handler<AsyncResult<Whisky>> next) {
+        mongoClient.findOneAndUpdateWithOptions(COLLECTION,
                 new JsonObject().put("_id", id),
-                new JsonObject().put("$set", src),
+                new JsonObject().put("$set", src.put("NAME", src.getString("name")).put("ORIGIN", src.getString("origin"))),
+                new FindOptions(),
+                new UpdateOptions().setReturningNewDocument(true),
                 updateResult -> {
                     if (updateResult.failed()) {
                         next.handle(Future.failedFuture(updateResult.cause()));
-                    } else if (updateResult.result().getDocMatched() == 0) {
+                    } else if (updateResult.result() == null) {
                         next.handle(Future.failedFuture("not found whisky: " + id));
                     } else {
-                        next.handle(Future.succeededFuture(new Whisky(id, src.getString("name"), src.getString("origin"))));
+                        next.handle(Future.succeededFuture(Whisky.fromJson(updateResult.result())));
                     }
                 });
     }
