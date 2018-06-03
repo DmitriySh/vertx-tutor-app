@@ -37,18 +37,17 @@ public class SimpleVerticleTest {
     }
 
     @Test
-    public void verticleShouldResponseSuccess(TestContext context) {
+    public void getWelcomePageShouldBeAvailable(TestContext context) {
         Async async = context.async();
-        vertx.createHttpClient()
-                .getNow(port, "localhost", "/", response -> {
-                    context.assertEquals(200, response.statusCode(), "status code isn't 'ok'");
-                    response.handler(body -> {
-                        String text = body.toString();
-                        context.assertNotNull(text, "body is empty");
-                        context.assertTrue(text.contains("Hello"), "not welcome page");
-                        async.complete();
-                    });
-                });
+        vertx.createHttpClient().getNow(port, "localhost", "/", response -> {
+            context.assertEquals(200, response.statusCode(), "status code isn't 'ok'");
+            response.handler(body -> {
+                String text = body.toString();
+                context.assertNotNull(text, "body is empty");
+                context.assertTrue(text.contains("Hello"), "not welcome page");
+                async.complete();
+            });
+        });
     }
 
     private int buildLocalPort() throws IOException {

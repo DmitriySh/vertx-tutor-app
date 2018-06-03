@@ -18,6 +18,7 @@ import ru.shishmakov.blog.Whisky;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
 import static java.util.Objects.isNull;
@@ -30,14 +31,17 @@ import static java.util.stream.Collectors.toList;
 public class WebMongoVerticle extends AbstractVerticle {
 
     public static final String COLLECTION = "whiskies";
-    public static final String SEQUENCE = "whiskies_seq";
+    public static final String COLLECTION_SEQ = "whiskies_seq";
     public static final Pattern digits = Pattern.compile("^[0-9]+$");
 
     private MongoClient mongoClient;
 
     @Override
     public void start(Future<Void> verticleFuture) {
-        this.mongoClient = MongoClient.createShared(vertx, config(), "ds-whisky");
+        this.mongoClient = MongoClient.createShared(vertx, ((UnaryOperator<JsonObject>) conf -> {
+            conf.getMap().putIfAbsent("db_name", "whisky_store");
+            return conf;
+        }).apply(config()), "ds-whisky");
         initDefaultData(
                 initialized -> startWeb(httpServer -> completeStartup(httpServer, verticleFuture)),
                 verticleFuture);
@@ -225,7 +229,7 @@ public class WebMongoVerticle extends AbstractVerticle {
      * First of all we need to generate a sequence number and then save the new document
      */
     private void insertOne(Whisky src, Handler<AsyncResult<Whisky>> next) {
-        mongoClient.findOneAndUpdateWithOptions(SEQUENCE,
+        mongoClient.findOneAndUpdateWithOptions(COLLECTION_SEQ,
                 new JsonObject(),
                 new JsonObject().put("$inc", new JsonObject().put("number", 1)),
                 new FindOptions(),
@@ -263,10 +267,12 @@ public class WebMongoVerticle extends AbstractVerticle {
         mongoClient.findOne(COLLECTION, new JsonObject().put("_id", id), null, findResult -> {
             if (findResult.failed()) {
                 next.handle(Future.failedFuture(findResult.cause()));
-            } else if (findResult.result().isEmpty()) {
-                next.handle(Future.failedFuture("not found whisky with id: " + id));
             } else {
-                next.handle(Future.succeededFuture(Whisky.fromJson(findResult.result())));
+                if (findResult.result() == null) {
+                    next.handle(Future.failedFuture("not found whisky with id: " + id));
+                } else {
+                    next.handle(Future.succeededFuture(Whisky.fromJson(findResult.result())));
+                }
             }
         });
     }
