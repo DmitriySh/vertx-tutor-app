@@ -2,5 +2,9 @@
   "http.port": ${http.port},
   "url": "jdbc:hsqldb:mem:test?shutdown=true",
   "driver_class": "org.hsqldb.jdbcDriver",
-  "max_pool_size": 10
+  "max_pool_size": 10,
+
+
+  "db_name": "whiskies_it",
+  "connection_string": "mongodb://localhost:37017"
 }
