@@ -40,6 +40,7 @@ public class WebMongoVerticle extends AbstractVerticle {
     public void start(Future<Void> verticleFuture) {
         this.mongoClient = MongoClient.createShared(vertx, ((UnaryOperator<JsonObject>) conf -> {
             conf.getMap().putIfAbsent("db_name", "whisky_store");
+            conf.getMap().putIfAbsent("connection_string", "mongodb://localhost:27017");
             return conf;
         }).apply(config()), "ds-whisky");
         initDefaultData(

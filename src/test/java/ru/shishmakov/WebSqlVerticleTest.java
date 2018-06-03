@@ -25,7 +25,7 @@ public class WebSqlVerticleTest extends WebVerticle {
         port = buildLocalPort();
         DeploymentOptions options = new DeploymentOptions().setConfig(new JsonObject()
                 .put("http.port", port)
-                .put("url", "jdbc:hsqldb:mem:test;shutdown=true")
+                .put("url", "jdbc:hsqldb:mem:whisky_store;shutdown=true")
                 .put("driver_class", "org.hsqldb.jdbcDriver"));
         vertx = Vertx.vertx();
         vertx.deployVerticle(WebSqlVerticle.class, options, context.asyncAssertSuccess());

@@ -43,7 +43,7 @@ public class WebSqlVerticle extends AbstractVerticle {
     @Override
     public void start(Future<Void> verticleFuture) {
         this.jdbc = JDBCClient.createShared(vertx, ((UnaryOperator<JsonObject>) conf -> {
-            conf.getMap().putIfAbsent("url", "jdbc:hsqldb:file:db/whiskies");
+            conf.getMap().putIfAbsent("url", "jdbc:hsqldb:file:db/whisky_store");
             conf.getMap().putIfAbsent("driver_class", "org.hsqldb.jdbcDriver");
             conf.getMap().putIfAbsent("max_pool_size", 10);
             return conf;

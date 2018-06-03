@@ -1,6 +1,6 @@
 {
   "http.port": 8082,
-  "url": "jdbc:hsqldb:file:db/whiskies",
+  "url": "jdbc:hsqldb:file:db/whisky_store",
   "driver_class": "org.hsqldb.jdbcDriver",
   "max_pool_size": 10,
 
