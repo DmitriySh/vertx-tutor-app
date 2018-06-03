@@ -189,7 +189,7 @@ public abstract class WebVerticle {
         });
     }
 
-    protected static int buildLocalPort() throws IOException {
+    protected static int getFreeLocalPort() throws IOException {
         try (ServerSocket socket = new ServerSocket(0)) {
             return socket.getLocalPort();
         }

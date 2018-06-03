@@ -41,7 +41,7 @@ public class WebMongoVerticleTest extends WebVerticle {
 
     @Before
     public void setUp(TestContext context) throws IOException {
-        mongoPort = buildLocalPort();
+        mongoPort = getFreeLocalPort();
         mongo = MongodStarter.getDefaultInstance()
                 .prepare(new MongodConfigBuilder()
                         .version(Version.Main.PRODUCTION)
@@ -49,7 +49,7 @@ public class WebMongoVerticleTest extends WebVerticle {
                         .build())
                 .start();
 
-        vertxPort = buildLocalPort();
+        vertxPort = getFreeLocalPort();
         DeploymentOptions options = new DeploymentOptions().setConfig(new JsonObject()
                 .put("http.port", vertxPort)
                 .put("db_name", DATABASE)

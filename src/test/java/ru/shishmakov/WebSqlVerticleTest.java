@@ -22,7 +22,7 @@ public class WebSqlVerticleTest extends WebVerticle {
 
     @Before
     public void setUp(TestContext context) throws IOException {
-        port = buildLocalPort();
+        port = getFreeLocalPort();
         DeploymentOptions options = new DeploymentOptions().setConfig(new JsonObject()
                 .put("http.port", port)
                 .put("url", "jdbc:hsqldb:mem:whisky_store;shutdown=true")
