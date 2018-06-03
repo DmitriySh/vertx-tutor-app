@@ -30,20 +30,21 @@ import static java.util.stream.Collectors.toList;
  */
 public class WebSqlVerticle extends AbstractVerticle {
 
-    public static final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS whisky (id INTEGER IDENTITY, name varchar(100), origin varchar(100))";
-    public static final String SELECT_ALL = "SELECT * FROM whisky";
-    public static final String SELECT_BY_ID = "SELECT * FROM whisky WHERE id=?";
-    public static final String INSERT_ONE = "INSERT INTO whisky (name, origin) VALUES (?, ?)";
-    public static final String UPDATE_NAME_AND_ORIGIN_AND_ID = "UPDATE whisky SET name=?, origin=? WHERE id=?";
-    public static final String DELETE_BY_ID = "DELETE FROM whisky WHERE id=?";
-    public static final Pattern digits = Pattern.compile("^[0-9]+$");
+    private static final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS whisky (id INTEGER IDENTITY, name varchar(100), origin varchar(100))";
+    private static final String SELECT_ALL = "SELECT * FROM whisky";
+    private static final String SELECT_BY_ID = "SELECT * FROM whisky WHERE id=?";
+    private static final String INSERT_ONE = "INSERT INTO whisky (name, origin) VALUES (?, ?)";
+    private static final String UPDATE_NAME_AND_ORIGIN_AND_ID = "UPDATE whisky SET name=?, origin=? WHERE id=?";
+    private static final String DELETE_BY_ID = "DELETE FROM whisky WHERE id=?";
+    private static final String DATABASE = "whisky_store";
+    private static final Pattern digits = Pattern.compile("^[0-9]+$");
 
     private JDBCClient jdbc;
 
     @Override
     public void start(Future<Void> verticleFuture) {
         this.jdbc = JDBCClient.createShared(vertx, ((UnaryOperator<JsonObject>) conf -> {
-            conf.getMap().putIfAbsent("url", "jdbc:hsqldb:file:db/whisky_store");
+            conf.getMap().putIfAbsent("url", "jdbc:hsqldb:file:db/" + DATABASE);
             conf.getMap().putIfAbsent("driver_class", "org.hsqldb.jdbcDriver");
             conf.getMap().putIfAbsent("max_pool_size", 10);
             return conf;

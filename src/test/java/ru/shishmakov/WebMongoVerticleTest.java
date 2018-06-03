@@ -9,7 +9,6 @@ import de.flapdoodle.embed.process.runtime.Network;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
@@ -23,12 +22,12 @@ import java.io.IOException;
 @RunWith(VertxUnitRunner.class)
 public class WebMongoVerticleTest extends WebVerticle {
 
+    private static final String DATABASE = "whiskies_test";
     private static int mongoPort;
     private static MongodProcess mongo;
 
     private Vertx vertx;
     private int vertxPort;
-    private MongoClient mongoClient;
 
     @BeforeClass
     public static void initialized() {
@@ -53,7 +52,7 @@ public class WebMongoVerticleTest extends WebVerticle {
         vertxPort = buildLocalPort();
         DeploymentOptions options = new DeploymentOptions().setConfig(new JsonObject()
                 .put("http.port", vertxPort)
-                .put("db_name", "whiskies_test")
+                .put("db_name", DATABASE)
                 .put("connection_string", "mongodb://localhost:" + mongoPort));
         vertx = Vertx.vertx();
         vertx.deployVerticle(WebMongoVerticle.class, options, context.asyncAssertSuccess());

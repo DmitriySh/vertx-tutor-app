@@ -30,16 +30,17 @@ import static java.util.stream.Collectors.toList;
  */
 public class WebMongoVerticle extends AbstractVerticle {
 
-    public static final String COLLECTION = "whiskies";
-    public static final String COLLECTION_SEQ = "whiskies_seq";
-    public static final Pattern digits = Pattern.compile("^[0-9]+$");
+    private static final String COLLECTION = "whiskies";
+    private static final String COLLECTION_SEQ = "whiskies_seq";
+    private static final String DATABASE = "whisky_store";
+    private static final Pattern digits = Pattern.compile("^[0-9]+$");
 
     private MongoClient mongoClient;
 
     @Override
     public void start(Future<Void> verticleFuture) {
         this.mongoClient = MongoClient.createShared(vertx, ((UnaryOperator<JsonObject>) conf -> {
-            conf.getMap().putIfAbsent("db_name", "whisky_store");
+            conf.getMap().putIfAbsent("db_name", DATABASE);
             conf.getMap().putIfAbsent("connection_string", "mongodb://localhost:27017");
             return conf;
         }).apply(config()), "ds-whisky");
