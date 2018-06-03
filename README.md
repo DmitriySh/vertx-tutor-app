@@ -13,19 +13,19 @@ The examples demonstrate how to use [Vert.x](https://vertx.io) including [Vert.x
 
 ## Examples:
  * Simple Vert.x instance<br/>
-   change the value of element 'Main-Verticle' in pom.xml to ...
+   change the value of element `Main-Verticle` in pom.xml to ...
    ```xml
    <Main-Verticle>ru.shishmakov.SimpleVerticle</Main-Verticle>
    ```
 
  * Vert.x instance with HSQLDB 2.x<br/>
-   change the value of element 'Main-Verticle' in pom.xml to ...
+   change the value of element `Main-Verticle` in pom.xml to ...
    ```xml
    <Main-Verticle>ru.shishmakov.WebSqlVerticle</Main-Verticle>
    ```
 
  * Vert.x instance with MongoDB 3.x (*need external mongod process*)<br/>
-   change the value of element 'Main-Verticle' in pom.xml to ...
+   change the value of element `Main-Verticle` in pom.xml to ...
    ```xml
    <Main-Verticle>ru.shishmakov.WebMongoVerticle</Main-Verticle>
    ```
