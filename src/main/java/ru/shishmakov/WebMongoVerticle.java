@@ -227,9 +227,11 @@ public class WebMongoVerticle extends AbstractVerticle {
                     else {
                         int nextId = findResult.result().isEmpty() ? 0 : findResult.result().get(0).getInteger("_id") + 1;
                         mongoClient.insert(COLLECTION, src.toJson(true).put("_id", nextId), insertResult -> {
-                            if (insertResult.failed()) next.handle(Future.failedFuture(insertResult.cause()));
-                            else
+                            if (insertResult.failed()) {
+                                next.handle(Future.failedFuture(insertResult.cause()));
+                            } else {
                                 next.handle(Future.succeededFuture(new Whisky(nextId, src.getName(), src.getOrigin())));
+                            }
                         });
                     }
                 });
@@ -237,7 +239,7 @@ public class WebMongoVerticle extends AbstractVerticle {
 
     private void update(Integer id, JsonObject src, Handler<AsyncResult<Whisky>> next) {
         mongoClient.updateCollection(COLLECTION,
-                new JsonObject().put("_id", String.valueOf(id)),
+                new JsonObject().put("_id", id),
                 new JsonObject().put("$set", src),
                 updateResult -> {
                     if (updateResult.failed()) {
@@ -251,7 +253,7 @@ public class WebMongoVerticle extends AbstractVerticle {
     }
 
     private void selectOne(Integer id, Handler<AsyncResult<Whisky>> next) {
-        mongoClient.findOne(COLLECTION, new JsonObject().put("_id", String.valueOf(id)), null, findResult -> {
+        mongoClient.findOne(COLLECTION, new JsonObject().put("_id", id), null, findResult -> {
             if (findResult.failed()) {
                 next.handle(Future.failedFuture(findResult.cause()));
             } else if (findResult.result().isEmpty()) {
