@@ -222,7 +222,7 @@
             <plugin>
                 <groupId>com.github.joelittlejohn.embedmongo</groupId>
                 <artifactId>embedmongo-maven-plugin</artifactId>
-                <version>0.3.3</version>
+                <version>0.4.0</version>
                 <executions>
                     <execution>
                         <id>start</id>
@@ -233,7 +233,7 @@
                             <!-- optional, default 27017 -->
                             <port>37017</port>
                             <!-- optional, default 2.2.1 -->
-                            <version>3.4.14</version>
+                            <version>3.6.2</version>
                             <!-- optional, default is a new dir in java.io.tmpdir -->
                             <databaseDirectory>${project.build.directory}/mongotest</databaseDirectory>
                             <!-- optional (file|console|none), default console -->
