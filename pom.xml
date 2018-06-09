@@ -219,6 +219,7 @@
                 </executions>
             </plugin>
 
+            <!-- We use plugin embedmongo-maven-plugin to start embedded mongod instance for integration tests -->     
             <plugin>
                 <groupId>com.github.joelittlejohn.embedmongo</groupId>
                 <artifactId>embedmongo-maven-plugin</artifactId>
