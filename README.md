@@ -6,9 +6,9 @@ The examples demonstrate how to use [Vert.x](https://vertx.io) including [Vert.x
 [Vert.x](https://vertx.io) is a toolkit for building reactive applications on the JVM: modern, scalable network apps.
 
 ## Requirements:
-  * Java SE Development Kit 8 (or newer)  
-  * Maven 3.X
-  * Git 1.7.x (or newer) 
+  * Java SE Development Kit 8
+  * Maven 3.X (or you could use Maven wrapper)
+  * Git 1.7.x (or newer)
 
 
 ## Examples:
@@ -32,22 +32,22 @@ The examples demonstrate how to use [Vert.x](https://vertx.io) including [Vert.x
 
 
 ## API
- * get all items 
+ * get all items
     - `curl -X GET localhost:8080/api/whiskies`
- * get one item by id 
+ * get one item by id
     - `curl -X GET localhost:8080/api/whiskies/1`
- * delete item by id 
+ * delete item by id
     - `curl -X DELETE localhost:8080/api/whiskies/2`
- * change item by id 
+ * change item by id
     - `curl -H "Content-Type: application/json" -X PUT -d '{"name":"Jameson","origin":"Ireland"}' localhost:8080/api/whiskies/1`
- * add new item 
+ * add new item
     - `curl -H "Content-Type: application/json" -X POST -d '{"name":"WhiskyName","origin":"WhiskyOrigin"}' localhost:8080/api/whiskies`
- 
+
 
 ## Run:
  * build fat jar and run unit/integration tests
 ```bash
-$ mvn clean verify
+$ ./mvnw clean verify
 [INFO] Scanning for projects...
 [INFO]
 [INFO] -------------------< ru.shishmakov:vertx-tutor-app >--------------------
