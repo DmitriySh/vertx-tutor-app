@@ -18,7 +18,7 @@ The examples demonstrate how to use [Vert.x](https://vertx.io) including [Vert.x
    <Main-Verticle>ru.shishmakov.SimpleVerticle</Main-Verticle>
    ```
 
- * Vert.x instance with HSQLDB 2.x<br/>
+ * Vert.x instance with HSQLDB 2.x (*embedded HSQLDB*)<br/>
    change the value of element `Main-Verticle` in pom.xml to ...
    ```xml
    <Main-Verticle>ru.shishmakov.WebSqlVerticle</Main-Verticle>
