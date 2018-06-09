@@ -14,8 +14,11 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.shishmakov.blog.Whisky;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
@@ -29,6 +32,7 @@ import static java.util.stream.Collectors.toList;
  * Use <b>vertx-web</b> part of Vert.x
  */
 public class WebMongoVerticle extends AbstractVerticle {
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static final String COLLECTION = "whiskies";
     private static final String COLLECTION_SEQ = "whiskies_seq";
@@ -52,6 +56,7 @@ public class WebMongoVerticle extends AbstractVerticle {
     @Override
     public void stop() {
         mongoClient.close();
+        logger.info("stop server");
     }
 
     /**
@@ -108,8 +113,10 @@ public class WebMongoVerticle extends AbstractVerticle {
      * @param verticleFuture main verticle future
      */
     private void completeStartup(AsyncResult<HttpServer> httpServer, Future<Void> verticleFuture) {
-        if (httpServer.succeeded()) verticleFuture.complete();
-        else verticleFuture.fail(httpServer.cause());
+        if (httpServer.succeeded()) {
+            verticleFuture.complete();
+            logger.info("start server");
+        } else verticleFuture.fail(httpServer.cause());
     }
 
     private Whisky buildTalisker() {

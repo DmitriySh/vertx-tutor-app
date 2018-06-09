@@ -15,8 +15,11 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.shishmakov.blog.Whisky;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
@@ -29,6 +32,7 @@ import static java.util.stream.Collectors.toList;
  * Use <b>vertx-web</b> part of Vert.x
  */
 public class WebSqlVerticle extends AbstractVerticle {
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS whisky (id INTEGER IDENTITY, name varchar(100), origin varchar(100))";
     private static final String SELECT_ALL = "SELECT * FROM whisky";
@@ -49,7 +53,7 @@ public class WebSqlVerticle extends AbstractVerticle {
             conf.getMap().putIfAbsent("max_pool_size", 10);
             return conf;
         }).apply(config()), "ds-whisky");
-
+        System.setProperty("hsqldb.reconfig_logging", "false");
         startBackend(con -> initDefaultData(
                 con,
                 initialized -> startWeb(httpServer -> completeStartup(httpServer, verticleFuture)),
@@ -60,6 +64,7 @@ public class WebSqlVerticle extends AbstractVerticle {
     @Override
     public void stop() {
         jdbc.close();
+        logger.info("stop server");
     }
 
     /**
@@ -143,8 +148,10 @@ public class WebSqlVerticle extends AbstractVerticle {
      * @param verticleFuture main verticle future
      */
     private void completeStartup(AsyncResult<HttpServer> httpServer, Future<Void> verticleFuture) {
-        if (httpServer.succeeded()) verticleFuture.complete();
-        else verticleFuture.fail(httpServer.cause());
+        if (httpServer.succeeded()) {
+            verticleFuture.complete();
+            logger.info("start server");
+        } else verticleFuture.fail(httpServer.cause());
     }
 
     private Whisky buildTalisker() {

@@ -50,6 +50,11 @@
         </dependency>
 
         <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+        <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
             <version>${vertx.version}</version>
@@ -111,8 +116,8 @@
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
                                         <Main-Class>io.vertx.core.Launcher</Main-Class>
-                                        <Main-Verticle>ru.shishmakov.WebMongoVerticle</Main-Verticle>
-                                        <!--<Main-Verticle>ru.shishmakov.WebSqlVerticle</Main-Verticle>-->
+                                        <!--<Main-Verticle>ru.shishmakov.WebMongoVerticle</Main-Verticle>-->
+                                        <Main-Verticle>ru.shishmakov.WebSqlVerticle</Main-Verticle>
                                         <!--<Main-Verticle>ru.shishmakov.SimpleVerticle</Main-Verticle>-->
                                     </manifestEntries>
                                 </transformer>
@@ -219,7 +224,7 @@
                 </executions>
             </plugin>
 
-            <!-- We use plugin embedmongo-maven-plugin to start embedded mongod instance for integration tests -->     
+            <!-- We use plugin embedmongo-maven-plugin to start embedded mongod instance for integration tests -->
             <plugin>
                 <groupId>com.github.joelittlejohn.embedmongo</groupId>
                 <artifactId>embedmongo-maven-plugin</artifactId>
