@@ -4,7 +4,6 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -47,90 +46,90 @@ public class WebSqlVerticle extends AbstractVerticle {
 
     @Override
     public void start(Future<Void> verticleFuture) {
+        System.setProperty("hsqldb.reconfig_logging", "false");
+
         this.jdbc = JDBCClient.createShared(vertx, ((UnaryOperator<JsonObject>) conf -> {
             conf.getMap().putIfAbsent("url", "jdbc:hsqldb:file:db/" + DATABASE);
             conf.getMap().putIfAbsent("driver_class", "org.hsqldb.jdbcDriver");
             conf.getMap().putIfAbsent("max_pool_size", 10);
             return conf;
         }).apply(config()), "ds-whisky");
-        System.setProperty("hsqldb.reconfig_logging", "false");
-        startBackend(con -> initDefaultData(
-                con,
-                initialized -> startWeb(httpServer -> completeStartup(httpServer, verticleFuture)),
-                verticleFuture
-        ), verticleFuture);
+
+        getConnection()
+                .compose(this::initDefaultData)
+                .compose(v -> startWeb())
+                .setHandler(verticleFuture.completer());
     }
 
     @Override
     public void stop() {
         jdbc.close();
-        logger.info("stop server");
+        logger.info("server has stopped");
     }
 
     /**
-     * Retrieves a SQLConnection and then calls the next step
-     *
-     * @param next           next step in the chain handlers
-     * @param verticleFuture main verticle future
+     * Retrieves an async SQLConnection
      */
-    private void startBackend(Handler<AsyncResult<SQLConnection>> next, Future<Void> verticleFuture) {
+    private Future<SQLConnection> getConnection() {
+        Future<SQLConnection> future = Future.future();
         jdbc.getConnection(connection -> {
-            if (connection.failed()) verticleFuture.fail(connection.cause());
-            else next.handle(Future.succeededFuture(connection.result()));
+            if (connection.failed()) future.fail(connection.cause());
+            else future.complete(connection.result());
         });
+        return future;
     }
 
     /**
-     * Initializes the database with default values and then calls the next step
+     * Initializes the database with default values
      *
-     * @param connResult     SQLConnection instance
-     * @param next           next step in the chain handlers
-     * @param verticleFuture main verticle future
+     * @param sqlCon SQLConnection instance
      */
-    private void initDefaultData(AsyncResult<SQLConnection> connResult, Handler<AsyncResult<Void>> next, Future<Void> verticleFuture) {
-        if (connResult.failed()) verticleFuture.fail(connResult.cause());
-        else {
-            SQLConnection sqlCon = connResult.result();
-            sqlCon.execute(CREATE_TABLE, createResult -> {
-                if (createResult.failed()) {
-                    verticleFuture.fail(createResult.cause());
+    private Future<Void> initDefaultData(SQLConnection sqlCon) {
+        Future<Void> future = Future.future();
+        sqlCon.execute(CREATE_TABLE, createResult -> {
+            if (createResult.failed()) {
+                future.fail(createResult.cause());
+                sqlCon.close();
+                return;
+            }
+            sqlCon.query(SELECT_ALL, selectResult -> {
+                if (selectResult.failed()) {
+                    future.fail(selectResult.cause());
                     sqlCon.close();
                     return;
                 }
-                sqlCon.query(SELECT_ALL, selectResult -> {
-                    if (selectResult.failed()) {
-                        verticleFuture.fail(selectResult.cause());
-                        sqlCon.close();
-                        return;
-                    }
-                    if (selectResult.result().getNumRows() == 0) {
-                        // add 2 whines
-                        insertOne(buildBowmore(), sqlCon, insertBowmoreResult ->
-                                insertOne(buildTalisker(), sqlCon, insertTaliskerResult -> {
-                                    next.handle(Future.succeededFuture());
-                                    sqlCon.close();
-                                }));
-                    } else {
-                        next.handle(Future.succeededFuture());
-                        sqlCon.close();
-                    }
-                });
+                if (selectResult.result().getNumRows() == 0) {
+                    // add 2 whines
+                    insertOne(buildBowmore(), sqlCon, insertBowmoreResult -> {
+                        if (insertBowmoreResult.failed()) {
+                            future.fail(insertBowmoreResult.cause());
+                            sqlCon.close();
+                        } else insertOne(buildTalisker(), sqlCon, insertTaliskerResult -> {
+                            future.complete();
+                            sqlCon.close();
+                            logger.info("init default items for whisky store");
+                        });
+                    });
+                } else {
+                    future.complete();
+                    sqlCon.close();
+                }
             });
-        }
+        });
+        return future;
     }
 
     /**
-     * Start http server and then calls the next step
-     *
-     * @param next next step in the chain handlers
+     * Start http server
      */
-    private void startWeb(Handler<AsyncResult<HttpServer>> next) {
+    private Future<Void> startWeb() {
+        Future<Void> future = Future.future();
         Router router = Router.router(vertx);
         router.route("/").handler(this::welcomeRootHandler);
         router.route("/assets/*").handler(StaticHandler.create("assets"));
 
         router.get("/api/whiskies").handler(this::getAllHandler);
-        router.route("/api/whiskies*").handler(BodyHandler.create()); //resource not found
+        router.route("/api/whiskies*").handler(BodyHandler.create());
 
         router.post("/api/whiskies").handler(this::addOneHandler);
         router.get("/api/whiskies/:id").handler(this::getOneHandler);
@@ -138,20 +137,16 @@ public class WebSqlVerticle extends AbstractVerticle {
         router.delete("/api/whiskies/:id").handler(this::deleteOneHandler);
         vertx.createHttpServer()
                 .requestHandler(router::accept)
-                .listen(config().getInteger("http.port", 8080), next);
-    }
-
-    /**
-     * Http server has bound on the port and verticle starting has completed
-     *
-     * @param httpServer     instance of http server
-     * @param verticleFuture main verticle future
-     */
-    private void completeStartup(AsyncResult<HttpServer> httpServer, Future<Void> verticleFuture) {
-        if (httpServer.succeeded()) {
-            verticleFuture.complete();
-            logger.info("start server");
-        } else verticleFuture.fail(httpServer.cause());
+                .listen(config().getInteger("http.port", 8080), serverResult -> {
+                    if (serverResult.failed()) {
+                        future.fail(serverResult.cause());
+                        logger.info("server has failed on start");
+                    } else {
+                        future.complete();
+                        logger.info("server has started successfully");
+                    }
+                });
+        return future;
     }
 
     private Whisky buildTalisker() {

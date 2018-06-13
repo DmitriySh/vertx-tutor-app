@@ -4,7 +4,6 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.FindOptions;
@@ -48,54 +47,53 @@ public class WebMongoVerticle extends AbstractVerticle {
             conf.getMap().putIfAbsent("connection_string", "mongodb://localhost:27017");
             return conf;
         }).apply(config()), "ds-whisky");
-        initDefaultData(
-                initialized -> startWeb(httpServer -> completeStartup(httpServer, verticleFuture)),
-                verticleFuture);
+
+        initDefaultData()
+                .compose(v -> startWeb())
+                .setHandler(verticleFuture.completer());
     }
 
     @Override
     public void stop() {
         mongoClient.close();
-        logger.info("stop server");
+        logger.info("server has stopped");
     }
 
     /**
-     * Initializes the database with default values and then calls the next step
-     *
-     * @param next           next step in the chain handlers
-     * @param verticleFuture main verticle future
+     * Initializes the database with default values
      */
-    private void initDefaultData(Handler<AsyncResult<Void>> next, Future<Void> verticleFuture) {
+    private Future<Void> initDefaultData() {
+        Future<Void> future = Future.future();
         mongoClient.count(COLLECTION, new JsonObject(), countResult -> {
             if (countResult.failed()) {
-                verticleFuture.fail(countResult.cause());
+                future.fail(countResult.cause());
                 return;
             }
             if (countResult.result() == 0L) {
                 // add 2 whines
                 insertOne(buildBowmore(), insertBowmoreResult -> {
-                    if (insertBowmoreResult.failed()) verticleFuture.fail(insertBowmoreResult.cause());
+                    if (insertBowmoreResult.failed()) future.fail(insertBowmoreResult.cause());
                     else insertOne(buildTalisker(), insertTaliskerResult -> {
-                        if (insertTaliskerResult.failed()) verticleFuture.fail(insertTaliskerResult.cause());
-                        else next.handle(Future.succeededFuture());
+                        future.complete();
+                        logger.info("init default items for whisky store");
                     });
                 });
-            } else next.handle(Future.succeededFuture());
+            } else future.complete();
         });
+        return future;
     }
 
     /**
-     * Start http server and then calls the next step
-     *
-     * @param next next step in the chain handlers
+     * Start http server
      */
-    private void startWeb(Handler<AsyncResult<HttpServer>> next) {
+    private Future<Void> startWeb() {
+        Future<Void> future = Future.future();
         Router router = Router.router(vertx);
         router.route("/").handler(this::welcomeRootHandler);
         router.route("/assets/*").handler(StaticHandler.create("assets"));
 
         router.get("/api/whiskies").handler(this::getAllHandler);
-        router.route("/api/whiskies*").handler(BodyHandler.create()); //resource not found
+        router.route("/api/whiskies*").handler(BodyHandler.create());
 
         router.post("/api/whiskies").handler(this::addOneHandler);
         router.get("/api/whiskies/:id").handler(this::getOneHandler);
@@ -103,20 +101,16 @@ public class WebMongoVerticle extends AbstractVerticle {
         router.delete("/api/whiskies/:id").handler(this::deleteOneHandler);
         vertx.createHttpServer()
                 .requestHandler(router::accept)
-                .listen(config().getInteger("http.port", 8080), next);
-    }
-
-    /**
-     * Http server has bound on the port and verticle starting has completed
-     *
-     * @param httpServer     instance of http server
-     * @param verticleFuture main verticle future
-     */
-    private void completeStartup(AsyncResult<HttpServer> httpServer, Future<Void> verticleFuture) {
-        if (httpServer.succeeded()) {
-            verticleFuture.complete();
-            logger.info("start server");
-        } else verticleFuture.fail(httpServer.cause());
+                .listen(config().getInteger("http.port", 8080), serverResult -> {
+                    if (serverResult.failed()) {
+                        future.fail(serverResult.cause());
+                        logger.info("server has failed on start");
+                    } else {
+                        future.complete();
+                        logger.info("server has started successfully");
+                    }
+                });
+        return future;
     }
 
     private Whisky buildTalisker() {
