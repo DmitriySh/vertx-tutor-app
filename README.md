@@ -31,7 +31,7 @@ The examples demonstrate how to use [Vert.x](https://vertx.io) including [Vert.x
    ```
 
 
-## API
+## REST API
  * get all items
     - `curl -X GET localhost:8080/api/whiskies`
  * get one item by id
