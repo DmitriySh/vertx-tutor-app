@@ -115,10 +115,8 @@
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
-                                        <Main-Class>io.vertx.core.Launcher</Main-Class>
-                                        <!--<Main-Verticle>ru.shishmakov.WebMongoVerticle</Main-Verticle>-->
-                                        <Main-Verticle>ru.shishmakov.WebSqlVerticle</Main-Verticle>
-                                        <!--<Main-Verticle>ru.shishmakov.SimpleVerticle</Main-Verticle>-->
+                                        <Main-Class>${main_class}</Main-Class>
+                                        <Main-Verticle>${main_verticle}</Main-Verticle>
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
