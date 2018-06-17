@@ -13,21 +13,21 @@ The examples demonstrate how to use [Vert.x](https://vertx.io) including [Vert.x
 
 ## Examples:
  * Simple Vert.x instance<br/>
-   change the value of element `Main-Verticle` in pom.xml to ...
-   ```xml
-   <Main-Verticle>ru.shishmakov.SimpleVerticle</Main-Verticle>
+   change the value of environment variable `main_verticle` in run.sh to ...
+   ```bash
+   export main_verticle="ru.shishmakov.SimpleVerticle"
    ```
 
  * Vert.x instance with HSQLDB 2.x (*embedded HSQLDB*)<br/>
-   change the value of element `Main-Verticle` in pom.xml to ...
-   ```xml
-   <Main-Verticle>ru.shishmakov.WebSqlVerticle</Main-Verticle>
+   change the value of environment variable `main_verticle` in run.sh to ...
+   ```bash
+   export main_verticle="ru.shishmakov.WebSqlVerticle"
    ```
 
  * Vert.x instance with MongoDB 3.x (*need external mongod process*)<br/>
-   change the value of element `Main-Verticle` in pom.xml to ...
-   ```xml
-   <Main-Verticle>ru.shishmakov.WebMongoVerticle</Main-Verticle>
+   change the value of environment variable `main_verticle` in run.sh to ...
+   ```bash
+   export main_verticle="ru.shishmakov.WebMongoVerticle"
    ```
 
 
@@ -45,9 +45,9 @@ The examples demonstrate how to use [Vert.x](https://vertx.io) including [Vert.x
 
 
 ## Run:
- * build fat jar and run unit/integration tests
+ * rebuild, run unit/integration tests and start app
 ```bash
-$ ./mvnw clean verify
+$ ./run.sh build
 [INFO] Scanning for projects...
 [INFO]
 [INFO] -------------------< ru.shishmakov:vertx-tutor-app >--------------------
@@ -66,17 +66,27 @@ $ ./mvnw clean verify
 [INFO] Total time: 27.809 s
 [INFO] Finished at: 2018-06-03T22:08:17+01:00
 [INFO] ------------------------------------------------------------------------
+
+...
+
+01:26:56.603 [vert.x-eventloop-thread-0] INFO  r.s.WebMongoVerticle - server has started successfully
+Jun 18, 2018 1:26:56 AM io.vertx.core.impl.launcher.commands.VertxIsolatedDeployer
+INFO: Succeeded in deploying verticle
 ```
 
- * start app
+ * start app only
 ```bash
-$ java -jar ./target/vertx-tutor-app-1.0-SNAPSHOT-fat.jar
+$ ./run.sh
+01:26:56.603 [vert.x-eventloop-thread-0] INFO  r.s.WebMongoVerticle - server has started successfully
+Jun 18, 2018 1:26:56 AM io.vertx.core.impl.launcher.commands.VertxIsolatedDeployer
 INFO: Succeeded in deploying verticle
 ```
 
  * start app with custom configs
 ```bash
-java -jar ./target/vertx-tutor-app-1.0-SNAPSHOT-fat.jar -conf ./target/classes/application-conf.json
+./run.sh ./target/classes/application-conf.json
+01:26:56.603 [vert.x-eventloop-thread-0] INFO  r.s.WebMongoVerticle - server has started successfully
+Jun 18, 2018 1:26:56 AM io.vertx.core.impl.launcher.commands.VertxIsolatedDeployer
 INFO: Succeeded in deploying verticle
 ```
 
