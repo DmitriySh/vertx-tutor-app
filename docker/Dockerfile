@@ -27,3 +27,6 @@ WORKDIR /project
 COPY --from=maven target/vertx-tutor*-fat.jar ./vertx-tutor.jar
 # run app
 ENTRYPOINT exec java $JAVA_OPTS -jar ./vertx-tutor.jar
+
+#docker image build -f ./docker/Dockerfile -t test-vertx-tutor:latest ./ --pull --no-cache
+#docker run -p 8080:8080 --name test-vertx-app test-vertx-tutor
