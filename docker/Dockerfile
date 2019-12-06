@@ -11,7 +11,7 @@ ARG main_verticle="ru.shishmakov.WebSqlVerticle"
 #ARG main_verticle="ru.shishmakov.SimpleVerticle"
 
 # build all dependencies for offline usage
-RUN mvn dependency:go-offline -B
+RUN mvn dependency:go-offline --no-transfer-progress --batch-mode
 RUN mvn clean package
 
 
