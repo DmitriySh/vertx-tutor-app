@@ -1,5 +1,5 @@
 # Multi-stage build
-# === Bild image: 1st phase ===
+# === Build image: 1st phase ===
 FROM maven:3.6.2-jdk-8-slim  as maven
 
 # copy the project files
